@@ -1,4 +1,4 @@
-package comment
+package CommentRepository
 
 import (
 	"github.com/jinzhu/gorm"
@@ -38,9 +38,13 @@ func (com *CommentRepo) Comment(id uint) (*entity.Comment,[]error){
 
 }
 
-func (com *CommentRepo) UpdateComment(comm *entity.Comment)(*entity.Comment,[]error){
-
-	cmt := comm
+func (com *CommentRepo) UpdateComment(id uint, comm entity.Comment)(*entity.Comment,[]error){
+	cmt,er:= com.Comment(id)
+	if len(er)>0{
+		return nil,er
+	}
+	cmt.Description = comm.Description
+	cmt.UserID = comm.UserID
 	err:= com.db.Save(cmt).GetErrors()
 
 	if len(err)>0{

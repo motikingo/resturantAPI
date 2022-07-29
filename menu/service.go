@@ -7,7 +7,7 @@ import (
 type CatagorySrv interface{
 	Catagories()([]entity.Catagory,[]error)
 	Catagory(id uint)(*entity.Catagory,[]error)
-	UpdateCatagory(id uint)(*entity.Catagory,[]error)
+	UpdateCatagory(id uint,ct entity.Catagory)(*entity.Catagory,[]error)
 	DeleteCatagory(id uint)(*entity.Catagory,[]error)
 	CreateCatagory(ct entity.Catagory)(*entity.Catagory,[]error)
 }
@@ -16,9 +16,8 @@ type ItemService interface{
 	Items()([]entity.Item,[]error)
 	Item(id uint)(*entity.Item,[]error)
 
-	UpdateItem(id uint)(*entity.Item,[]error)
-
-	DeleteItem(id uint)([]entity.Item,[]error)
+	UpdateItem(id uint,item entity.Item)(*entity.Item,[]error)
+	DeleteItem(id uint)(*entity.Item,[]error)
 	CreateItem(item *entity.Item)(*entity.Item,[]error)
 }
 

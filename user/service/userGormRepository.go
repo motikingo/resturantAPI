@@ -1,19 +1,19 @@
 package UserService
 
 import (
-	"github.com/motikingo/resturant-api/user"
 	"github.com/motikingo/resturant-api/entity"
+	"github.com/motikingo/resturant-api/user"
 )
 
-type UserGormRepository struct{
+type UserGormService struct{
 	repo user.UserRepo
 }
-func NewUserGormRepository(repo user.UserRepo)user.UserRepo{
-	return &UserGormRepository{repo:repo}
+func NewUserGormService(repo user.UserRepo)user.UserService{
+	return &UserGormService{repo:repo}
 }
 
 
-func(userRepo *UserGormRepository) Users()([]entity.User,[]error){
+func(userRepo *UserGormService) Users()([]entity.User,[]error){
 
 	users,err:= userRepo.repo.Users()
 	if len(err)>0{
@@ -23,7 +23,7 @@ func(userRepo *UserGormRepository) Users()([]entity.User,[]error){
 
 }
 
-func(userRepo *UserGormRepository)User(id uint)(*entity.User,[]error){
+func(userRepo *UserGormService)User(id uint)(*entity.User,[]error){
 
 	user,err:= userRepo.repo.User(id)
 	if len(err)>0{
@@ -33,16 +33,16 @@ func(userRepo *UserGormRepository)User(id uint)(*entity.User,[]error){
 
 }
 
-func(userRepo *UserGormRepository)UpdateUser(id uint)(*entity.User,[]error){
+func(userRepo *UserGormService)UpdateUser(id uint,usr entity.User)(*entity.User,[]error){
 
-	user,err := userRepo.repo.UpdateUser(id)
+	user,err := userRepo.repo.UpdateUser(id,usr)
 	if len(err)>0{
 		return nil,err
 	}
 	return user,nil
 }
 
-func(userRepo *UserGormRepository)DeleteUser(id uint)(*entity.User,[]error){
+func(userRepo *UserGormService)DeleteUser(id uint)(*entity.User,[]error){
 
 	
 	user,err := userRepo.repo.DeleteUser(id)
@@ -51,7 +51,7 @@ func(userRepo *UserGormRepository)DeleteUser(id uint)(*entity.User,[]error){
 	}
 	return user,nil
 }
-func(userRepo *UserGormRepository)CreateUser(user *entity.User)(*entity.User,[]error){
+func(userRepo *UserGormService)CreateUser(user *entity.User)(*entity.User,[]error){
 
 	usr := user
 	usr,err:= userRepo.repo.CreateUser(user)

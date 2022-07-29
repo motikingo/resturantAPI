@@ -13,58 +13,58 @@ import (
 
 type User struct{
 	gorm.Model
-	username string `gorm:"type:varchar(255);not null " `
-	password string `gorm:"type:varchar(255);not null"`
-	orders []Order  `gorm:"many2many:user_orders"`
-	comments []Comment `gorm:"many2many:user_comments"`
-	roles []Role 		`gorm:"many2many:user_roles"`
+	Username string  `json:"username" gorm:"type:varchar(255);not null " `
+	Password string `json:"password"  gorm:"type:varchar(255);not null"`
+	Orders []Order  `json:"orders"  	gorm:"one2many:user_orders"`
+	Comments []Comment `json:"comments" gorm:"many2many:user_comments"`
+	Roles []Role 		`json:"roles"  gorm:"many2many:user_roles"`
 
 }
 
 type Comment struct{
 	gorm.Model
-	description string `gorm:"type:varchar(255);not null"`
-	userID uint 
+	Description string `json:"description" gorm:"type:varchar(255);not null"`
+	UserID uint `json:"user_id"`
 
 }
 
+
 type Item struct{
 	gorm.Model
-	name string `gorm:type:varchar(255);not null`
-	catagorys []Catagory `gorm:"many2many:item_catagoies"`
-	price float64
-	description string 
-	Image string 			
-	ingridients []Ingridient 	`gorm:many2many:item_ingridients`
+	Name string `json:"name" gorm:type:varchar(255);not null`
+	Catagories []Catagory `json:"catagories" gorm:"many2many:item_catagoies"`
+	Price float64 		  `json:"price" gorm:type:varchar(255);not null`
+	Description string 	 `json:"description" gorm:type:varchar(255);not null`	
+	Image string 		`json:"image" `		
+	Ingridients []Ingridient 	`json:"ingridient" gorm:many2many:item_ingridients`
 
 }
 
 type Order struct{
 	gorm.Model
-	placeAt time.Time 
-	ItemsID uint `json :"itemsid"`
-	catagoryID uint `json :"catagoryid"`
-	userID uint `json :"userid"`
+	PlaceAt time.Time `json :"placeAt" gorm:not null`
+	ItemID uint `json :"itemsid"`
+	CatagoryID uint `json :"catagoryid"`
+	UserID uint `json :"userid"`
 
 }
 
 type Catagory struct{
 	gorm.Model
-	name string
-	userID uint
+	Name string `json:"name" gorm:type:varchar(255);not null`
+	Items []Item `json:"items"`
 
 }
 
 type Ingridient struct{
 	gorm.Model
-	name string 	`gorm:"type:varchar(255);not null"`
-	description string `gorm:type:varchar(255);not null`
-
+	Name string 	`json:"name" gorm:"type:varchar(255);not null"`
+	Description string `json:"description" gorm:type:varchar(255);not null`
 
 }
 
 type Role struct{
 	gorm.Model
-	name string
+	Name string `json:"name" gorm:"type:varchar(255);not null"`
 
 }

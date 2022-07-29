@@ -1,7 +1,6 @@
 package menuService
 
-
-import(
+import (
 	"github.com/motikingo/resturant-api/entity"
 	"github.com/motikingo/resturant-api/menu"
 )
@@ -11,7 +10,7 @@ type ItemGormService struct{
 	repo menu.ItemRepo
 }
 
-func NewItemRepository(repo menu.ItemRepo) menu.ItemService{
+func NewItemGormService(repo menu.ItemRepo) menu.ItemService{
 
 	return &ItemGormService{repo: repo}
 }
@@ -36,9 +35,9 @@ func(itemRepo *ItemGormService) Item(id uint)(*entity.Item,[]error){
 
 }
 
-func(itemRepo *ItemGormService) UpdateItem(id uint)(*entity.Item,[]error){
+func(itemRepo *ItemGormService) UpdateItem(id uint,it entity.Item)(*entity.Item,[]error){
 	
-	item,err := itemRepo.repo.UpdateItem(id)
+	item,err := itemRepo.repo.UpdateItem(id,it)
 	if len(err)>0{
 		return nil,err
 	}

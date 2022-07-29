@@ -1,16 +1,17 @@
 package menurepository
 
-import(
+import (
+	"fmt"
+	"github.com/jinzhu/gorm"
 	"github.com/motikingo/resturant-api/entity"
 	"github.com/motikingo/resturant-api/menu"
-	"github.com/jinzhu/gorm"
 )
 
 type CatagoryGormRepository struct{
 	db *gorm.DB
 }
 
-func NewCommentGormRepository(db *gorm.DB) menu.CatagoryRepo{
+func NewCatagoryGormRepository(db *gorm.DB) menu.CatagoryRepo{
 	return &CatagoryGormRepository{db: db}
 }
 
@@ -35,11 +36,15 @@ func(cat *CatagoryGormRepository)Catagory(id uint)(*entity.Catagory,[]error){
 	return &catagory,nil
 
 }
-func(cat *CatagoryGormRepository)UpdateCatagory(id uint)(*entity.Catagory,[]error){
+func(cat *CatagoryGormRepository)UpdateCatagory(id uint,cata entity.Catagory)(*entity.Catagory,[]error){
 	catagory,err:= cat.Catagory(id)
 	if len(err)>0{
 		return nil,err
 	}
+	
+	catagory.Name = cata.Name
+	catagory.Items = cata.Items
+
 	err = cat.db.Save(&catagory).GetErrors()
 	if len(err)>0{
 		return nil,err
@@ -65,6 +70,7 @@ func(cat *CatagoryGormRepository)CreateCatagory(catagory entity.Catagory)(*entit
 	err := cat.db.Create(&cata).GetErrors() 
 
 	if len(err)>0{
+		fmt.Println("its here")
 		return nil,err
 	}
 	return &cata,nil

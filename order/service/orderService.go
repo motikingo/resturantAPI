@@ -1,7 +1,7 @@
-package OrderRespository
+package OrderService
 
 import (
-	"github.com/motikingo/resturant-api/Order"
+	"github.com/motikingo/resturant-api/order"
 	"github.com/motikingo/resturant-api/entity"
 )
 
@@ -10,7 +10,7 @@ type OrderGormService struct{
 	repo Order.OrderRespository
 }
 
-func NewOrderGormRespository(repo Order.OrderRespository) Order.OrderService{
+func NewOrderGormService(repo Order.OrderRespository) Order.OrderService{
 	return &OrderGormService{repo: repo}
 }
 
@@ -33,10 +33,10 @@ func(odRepo *OrderGormService)Order(id uint)(*entity.Order,[]error){
 	return order,nil
 }
 
-func(odRepo *OrderGormService)UpdateOrder(id uint)(*entity.Order,[]error){
+func(odRepo *OrderGormService)UpdateOrder(id uint,ord entity.Order)(*entity.Order,[]error){
 
 	
-	order,err := odRepo.repo.UpdateOrder(id)
+	order,err := odRepo.repo.UpdateOrder(id,ord)
 	if len(err)>0{
 		return nil,err
 	}

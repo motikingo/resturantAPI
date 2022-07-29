@@ -2,8 +2,8 @@ package OrderRespository
 
 import (
 	"github.com/jinzhu/gorm"
-	"github.com/motikingo/resturant-api/Order"
 	"github.com/motikingo/resturant-api/entity"
+	Order "github.com/motikingo/resturant-api/order"
 )
 
 
@@ -34,17 +34,21 @@ func(odRepo *OrderGormRespository)Order(id uint)(*entity.Order,[]error){
 	return &order,nil
 }
 
-func(odRepo *OrderGormRespository)UpdateOrder(id uint)(*entity.Order,[]error){
+func(odRepo *OrderGormRespository)UpdateOrder(id uint,ord entity.Order)(*entity.Order,[]error){
 
-	orders,err:=odRepo.Order(id)
+	order,err:=odRepo.Order(id)
 	if len(err)>0{
 		return nil,err
 	}
-	err = odRepo.db.Save(&orders).GetErrors()
+	order.ItemID = ord.ItemID
+	order.CatagoryID = ord.CatagoryID
+	order.UserID = ord.UserID
+
+	err = odRepo.db.Save(&order).GetErrors()
 	if len(err)>0{
 		return nil,err
 	}
-	return orders,nil
+	return order,nil
 }
 
 func(odRepo *OrderGormRespository)DeleteOrder(id uint)(*entity.Order,[]error){
@@ -60,14 +64,14 @@ func(odRepo *OrderGormRespository)DeleteOrder(id uint)(*entity.Order,[]error){
 	
 }
 
-func(odRepo *OrderGormRespository)CreateOrder(order *entity.Order)(*entity.Order,[]error){
+func(odRepo *OrderGormRespository)CreateOrder(order entity.Order)(*entity.Order,[]error){
 
 	ord := order 
 	err := odRepo.db.Create(&ord).GetErrors()
 	if len(err)>0{
 		return nil,err
 	}
-	return order,nil
+	return &ord,nil
 }
 
 func(odRepo *OrderGormRespository)CustomerOrders(customer entity.User) ([]entity.Order,[]error){

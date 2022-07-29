@@ -37,11 +37,18 @@ func(itemRepo *ItemRepository) Item(id uint)(*entity.Item,[]error){
 
 }
 
-func(itemRepo *ItemRepository) UpdateItem(id uint)(*entity.Item,[]error){
+func(itemRepo *ItemRepository) UpdateItem(id uint,it entity.Item)(*entity.Item,[]error){
 	item,err := itemRepo.Item(id)
 	if len(err)>0{
 		return nil,err
 	}
+	item.Name = it.Name
+	item.Price = it.Price
+	item.Description = it.Description
+	item.Image = it.Image
+	item.Ingridients = it.Ingridients
+	item.Catagories = it.Catagories
+
 	err = itemRepo.db.Save(&item).GetErrors()
 	if len(err)>0{
 		return nil,err

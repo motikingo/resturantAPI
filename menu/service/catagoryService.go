@@ -9,7 +9,7 @@ type CatagoryGormService struct{
 	repo menu.CatagoryRepo
 }
 
-func NewCommentGormRepository(repo menu.CatagoryRepo) menu.CatagorySrv{
+func NewCatagoryGormService(repo menu.CatagoryRepo) menu.CatagorySrv{
 	return &CatagoryGormService{repo:repo}
 }
 
@@ -32,9 +32,9 @@ func(cat *CatagoryGormService)Catagory(id uint)(*entity.Catagory,[]error){
 	return catagory,nil
 
 }
-func(cat *CatagoryGormService)UpdateCatagory(id uint)(*entity.Catagory,[]error){
+func(cat *CatagoryGormService)UpdateCatagory(id uint,ct entity.Catagory)(*entity.Catagory,[]error){
 	
-	catagory,err:= cat.repo.UpdateCatagory(id) 
+	catagory,err:= cat.repo.UpdateCatagory(id,ct) 
 	if len(err)>0{
 		return nil,err
 	}
@@ -57,7 +57,7 @@ func(cat *CatagoryGormService)CreateCatagory(catagory entity.Catagory)(*entity.C
 	if len(err)>0{
 		return nil,err
 	}
-	return &cata,nil
+	return cata,nil
 
 }
 

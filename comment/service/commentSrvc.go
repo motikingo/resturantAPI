@@ -1,4 +1,4 @@
-package comment
+package CommentService
 
 import (
 	"github.com/motikingo/resturant-api/comment"
@@ -10,7 +10,7 @@ type Commentsrv struct{
 	repo comment.CommentRepository
 }
 
-func NewCommentRepo(repo comment.CommentRepository) comment.CommentService{
+func NewCommentService(repo comment.CommentRepository) comment.CommentService{
 
 	return &Commentsrv{repo: repo}
 }
@@ -34,8 +34,8 @@ func (comsrv *Commentsrv) Comment(id uint) (*entity.Comment,[]error){
 
 }
 
-func (comsrv *Commentsrv) UpdateComment(comm *entity.Comment)(*entity.Comment,[]error){
-	cmt,err:= comsrv.repo.UpdateComment(comm)
+func (comsrv *Commentsrv) UpdateComment(id uint, comm entity.Comment)(*entity.Comment,[]error){
+	cmt,err:= comsrv.repo.UpdateComment(id,comm)
 
 	if len(err)>0{
 		return nil,err

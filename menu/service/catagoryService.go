@@ -32,7 +32,11 @@ func(cat *CatagoryGormService)Catagory(id uint)(*entity.Catagory,[]error){
 	return catagory,nil
 
 }
-func(cat *CatagoryGormService)UpdateCatagory(id uint,ct entity.Catagory)(*entity.Catagory,[]error){
+func(cat *CatagoryGormService)IsCatagoryNameExist(name string)bool{
+	return cat.repo.IsCatagoryNameExist(name)
+}
+
+func(cat *CatagoryGormService)UpdateCatagory(ct entity.Catagory)(*entity.Catagory,[]error){
 	
 	catagory,err:= cat.repo.UpdateCatagory(id,ct) 
 	if len(err)>0{

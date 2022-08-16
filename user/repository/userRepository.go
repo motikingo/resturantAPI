@@ -24,7 +24,7 @@ func(userRepo *UserGormRepository) Users()([]entity.User,[]error){
 
 }
 
-func(userRepo *UserGormRepository)User(id uint)(*entity.User,[]error){
+func(userRepo *UserGormRepository)GetUserByID(id uint)(*entity.User,[]error){
 	var user entity.User
 	err:= userRepo.db.First(&user,id).GetErrors()
 	if len(err)>0{
@@ -34,19 +34,55 @@ func(userRepo *UserGormRepository)User(id uint)(*entity.User,[]error){
 
 }
 
-func(userRepo *UserGormRepository)UpdateUser(id uint,usr entity.User)(*entity.User,[]error){
+func(userRepo *UserGormRepository)GetUserByEmail(email string)*entity.User{
+	var user entity.User
+	err := userRepo.db.First(&user,email).GetErrors()
+	if len(err)>0{
+		return nil
+	}
+	return &user
+}
+func(userRepo *UserGormRepository)GetUserByEmailAndID( id uint ,email string)*entity.User{
 
-	user,err:=userRepo.User(id)
+	var user entity.User
+	err := userRepo.db.First(&user,id,email).GetErrors()
+	if len(err)>0{
+		return nil
+	}
+	return &user
+
+}
+
+func(userRepo *UserGormRepository)UpdateUser(usr entity.User)(*entity.User,[]error){
+
+	user,err:=userRepo.GetUserByID(usr.ID)
 
 	if len(err)>0{
 		return nil,err
 	}
 
-	user.Username = usr.Username
-	user.Password = usr.Password
-	user.Orders = usr.Orders
-	user.Comments = usr.Comments
-	user.Roles = usr.Roles
+	user.Email = func () string {
+		if user.Email != usr.Email {
+			return user.Email
+		}
+		return user.Email
+	}()
+	user.Password = func ()string  {
+		if user.Password != usr.Password {
+			return usr.Password
+		}
+		return user.Password
+	}()
+
+
+	// user.Orders = func ()[]string {
+	// 	for i,order := user.Orders{
+	// 		if order != usr.Orders[i]{
+	// 			user.Orders[id] = usr.Orders[i]
+	// 		}
+	// 	}
+		
+	// }
 	
 	err = userRepo.db.Save(&user).GetErrors()
 	if len(err)>0{
@@ -55,9 +91,10 @@ func(userRepo *UserGormRepository)UpdateUser(id uint,usr entity.User)(*entity.Us
 	return user,nil
 }
 
+
 func(userRepo *UserGormRepository)DeleteUser(id uint)(*entity.User,[]error){
 
-	user,err:=userRepo.User(id)
+	user,err:=userRepo.GetUserByID(id)
 
 	if len(err)>0{
 		return nil,err

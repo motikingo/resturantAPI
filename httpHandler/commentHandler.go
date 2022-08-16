@@ -25,15 +25,20 @@ var errs []error
 var comm entity.Comment
 type CommentHandler struct{
 	comSrv comment.CommentService
+	session *SessionHandler
 }
 
-func NewCommentHandler(comSrv comment.CommentService)CommentHandler{
-	return CommentHandler{comSrv:comSrv}
+func NewCommentHandler(comSrv comment.CommentService, session *SessionHandler)CommentHandler{
+	return CommentHandler{comSrv:comSrv, session:session}
 }
 
 func(comHandler *CommentHandler)GetComments(w http.ResponseWriter, r *http.Request){
-
 	w.Header().Set("Content-Type","application/json")
+	session := comHandler.session.GetSession(r)
+	if session == nil{
+		w.Write([]byte("Unauthorized user"))
+		return
+	}
 	comments,err := comHandler.comSrv.Comments()
 	if err!=nil {
 		log.Fatal(err)
@@ -46,8 +51,13 @@ func(comHandler *CommentHandler)GetComments(w http.ResponseWriter, r *http.Reque
 }
 
 func(comHandler *CommentHandler)GetComment(w http.ResponseWriter, r *http.Request){
-
 	w.Header().Set("Content-Type","application/json")
+	session := comHandler.session.GetSession(r)
+	if session == nil{
+		w.Write([]byte("Unauthorized user"))
+		return
+	}
+
 	id := mux.Vars(r)["id"]
 	ids,e:=strconv.Atoi(id)
 
@@ -69,6 +79,11 @@ func(comHandler *CommentHandler)GetComment(w http.ResponseWriter, r *http.Reques
 func(comHandler *CommentHandler)CreateComment(w http.ResponseWriter, r *http.Request){
 	var comm entity.Comment
 	w.Header().Set("Content-Type","application/json")
+	session := comHandler.session.GetSession(r)
+	if session == nil{
+		w.Write([]byte("Unauthorized user"))
+		return
+	}
 	read,er:=ioutil.ReadAll(r.Body)
 
 	if er!=nil {
@@ -94,8 +109,12 @@ func(comHandler *CommentHandler)CreateComment(w http.ResponseWriter, r *http.Req
 }
 
 func(comHandler *CommentHandler)UpdateComment(w http.ResponseWriter, r *http.Request){
-
 	w.Header().Set("Content-Type","application/json")
+	session := comHandler.session.GetSession(r)
+	if session == nil{
+		w.Write([]byte("Unauthorized user"))
+		return
+	}
 	var comm entity.Comment
 	id:= mux.Vars(r)["id"] 
 	ids,err:= strconv.Atoi(id)
@@ -126,8 +145,12 @@ func(comHandler *CommentHandler)UpdateComment(w http.ResponseWriter, r *http.Req
 }
 
 func(comHandler *CommentHandler)DeleteComment(w http.ResponseWriter, r *http.Request){
-
 	w.Header().Set("Content-Type","application/json")
+	session := comHandler.session.GetSession(r)
+	if session == nil{
+		w.Write([]byte("Unauthorized user"))
+		return
+	}
 	id := mux.Vars(r)["id"]
 	ids,e:=strconv.Atoi(id)
 

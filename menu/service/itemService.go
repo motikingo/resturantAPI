@@ -35,7 +35,17 @@ func(itemRepo *ItemGormService) Item(id uint)(*entity.Item,[]error){
 
 }
 
-func(itemRepo *ItemGormService) UpdateItem(id uint,it entity.Item)(*entity.Item,[]error){
+func(itemRepo *ItemGormService)IsItemNameExist(name string)bool{
+	var item entity.Item
+	item,err := itemRepo.repo.IsItemNameExist(name)
+	if len(err)>0{
+		return false
+	}
+	return true
+
+}
+
+func(itemRepo *ItemGormService) UpdateItem(it entity.Item)(*entity.Item,[]error){
 	
 	item,err := itemRepo.repo.UpdateItem(id,it)
 	if len(err)>0{
@@ -55,7 +65,7 @@ func(itemRepo *ItemGormService) DeleteItem(id uint)(*entity.Item,[]error){
 
 }
 
-func(itemRepo *ItemGormService) CreateItem(item *entity.Item)(*entity.Item,[]error){
+func(itemRepo *ItemGormService) CreateItem(item entity.Item)(*entity.Item,[]error){
 
 	it,err:= itemRepo.repo.CreateItem(item)
 	if len(err)>0{

@@ -4,21 +4,19 @@ import (
 	//"image"
 	"time"
 
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/jinzhu/gorm"
 )
 
-// import(
-// 	""
-// )
+const(
+	SessionName = "resturant"
+)
 
 type User struct{
 	gorm.Model
-	Username string  `json:"username" gorm:"type:varchar(255);not null " `
+	Email string  	`json:"email" gorm:"type:varchar(255);not null;unique"`
 	Password string `json:"password"  gorm:"type:varchar(255);not null"`
-	Orders []Order  `json:"orders"  	gorm:"one2many:user_orders"`
-	Comments []Comment `json:"comments" gorm:"many2many:user_comments"`
-	Roles []Role 		`json:"roles"  gorm:"many2many:user_roles"`
-
+	Role  string
 }
 
 type Comment struct{
@@ -32,11 +30,11 @@ type Comment struct{
 type Item struct{
 	gorm.Model
 	Name string `json:"name" gorm:type:varchar(255);not null`
-	Catagories []Catagory `json:"catagories" gorm:"many2many:item_catagoies"`
 	Price float64 		  `json:"price" gorm:type:varchar(255);not null`
 	Description string 	 `json:"description" gorm:type:varchar(255);not null`	
-	Image string 		`json:"image" `		
-	Ingridients []Ingridient 	`json:"ingridient" gorm:many2many:item_ingridients`
+	Image string 		`json:"image" `	
+	Catagories []string `json:"catagories" gorm:"not null"`
+	Ingridients []string 	`json:"ingridients" gorm:not null`
 
 }
 
@@ -52,19 +50,29 @@ type Order struct{
 type Catagory struct{
 	gorm.Model
 	Name string `json:"name" gorm:type:varchar(255);not null`
-	Items []Item `json:"items"`
+	ImageUrl string `json:"image"`
+	Items []string `json:"items"`
 
 }
 
-type Ingridient struct{
+type Ingredient struct{
 	gorm.Model
 	Name string 	`json:"name" gorm:"type:varchar(255);not null"`
 	Description string `json:"description" gorm:type:varchar(255);not null`
 
 }
 
-type Role struct{
-	gorm.Model
-	Name string `json:"name" gorm:"type:varchar(255);not null"`
+// type Role struct{
+// 	gorm.Model
+// 	Name string `json:"name" gorm:"type:varchar(255);not null"`
 
+// }
+
+type Session struct {
+	UserID string
+	Email string
+	Role  string
+	jwt.RegisteredClaims
 }
+
+

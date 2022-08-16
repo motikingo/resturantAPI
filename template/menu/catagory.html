@@ -1,0 +1,26 @@
+{{define "menu"}}
+<!DOCTYPE html>
+<html lang ="en">
+<head>
+    <title>check</title>
+</head>
+
+    <body>
+
+        <form  method="GET" action ="/">
+            <h2> menu</h2>
+
+            <div class = "menu">
+                {{range .}}
+                    <a href = "/catagory/{{.ID}}">{{.Name}}</a>
+                {{end}}
+                
+            </div>
+        </form>
+
+    </body>
+
+</html>
+
+{{end}}
+

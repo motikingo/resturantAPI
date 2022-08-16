@@ -36,14 +36,33 @@ func(cat *CatagoryGormRepository)Catagory(id uint)(*entity.Catagory,[]error){
 	return &catagory,nil
 
 }
-func(cat *CatagoryGormRepository)UpdateCatagory(id uint,cata entity.Catagory)(*entity.Catagory,[]error){
-	catagory,err:= cat.Catagory(id)
+
+func(cat *CatagoryGormRepository)IsCatagoryNameExist(name string)bool{
+	var catagory entity.Catagory
+	ers := cat.db.First(&catagory,name).GetErrors()
+
+	return ers == nil
+
+}
+func(cat *CatagoryGormRepository)UpdateCatagory(cata entity.Catagory)(*entity.Catagory,[]error){
+	catagory,err:= cat.Catagory(cata.ID)
 	if len(err)>0{
 		return nil,err
 	}
 	
-	catagory.Name = cata.Name
-	catagory.Items = cata.Items
+	catagory.Name = func ()string  {
+		if catagory.Name != cata.Name{
+			return cata.Name
+		}
+		return catagory.Name
+	}()
+
+	catagory.Items = func () []string  {
+		if len(cata.Items) != len(catagory.Items) {
+			return cata.Items
+		}
+		return catagory.Items
+	}()
 
 	err = cat.db.Save(&catagory).GetErrors()
 	if len(err)>0{

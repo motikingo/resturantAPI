@@ -13,9 +13,9 @@ func NewUserGormService(repo user.UserRepo)user.UserService{
 }
 
 
-func(userRepo *UserGormService) Users()([]entity.User,[]error){
+func(usersrv *UserGormService) Users()([]entity.User,[]error){
 
-	users,err:= userRepo.repo.Users()
+	users,err:= usersrv.repo.Users()
 	if len(err)>0{
 		return nil,err
 	}
@@ -23,9 +23,9 @@ func(userRepo *UserGormService) Users()([]entity.User,[]error){
 
 }
 
-func(userRepo *UserGormService)User(id uint)(*entity.User,[]error){
+func(usersrv *UserGormService)GetUserByID(id uint)(*entity.User,[]error){
 
-	user,err:= userRepo.repo.User(id)
+	user,err:= usersrv.repo.GetUserByID(id)
 	if len(err)>0{
 		return nil,err
 	}
@@ -33,28 +33,42 @@ func(userRepo *UserGormService)User(id uint)(*entity.User,[]error){
 
 }
 
-func(userRepo *UserGormService)UpdateUser(id uint,usr entity.User)(*entity.User,[]error){
-
-	user,err := userRepo.repo.UpdateUser(id,usr)
+func(usersrv *UserGormService)GetUserByEmail(email string)*entity.User{
+	user,err:= usersrv.repo.GetUserByEmail(email)
 	if len(err)>0{
 		return nil,err
 	}
 	return user,nil
 }
 
-func(userRepo *UserGormService)DeleteUser(id uint)(*entity.User,[]error){
+func(usersrv *UserGormService)GetUserByEmailAndID( id uint ,email string)*entity.User{
+
+	user:= usersrv.repo.GetUserByEmail(id,email)
+	return user
+}
+
+func(usersrv *UserGormService)UpdateUser(usr entity.User)(*entity.User,[]error){
+
+	user,err := usersrv.repo.UpdateUser(usr)
+	if len(err)>0{
+		return nil,err
+	}
+	return user,nil
+}
+
+func(usersrv *UserGormService)DeleteUser(id uint)(*entity.User,[]error){
 
 	
-	user,err := userRepo.repo.DeleteUser(id)
+	user,err := usersrv.repo.DeleteUser(id)
 	if len(err)>0{
 		return nil,err
 	}
 	return user,nil
 }
-func(userRepo *UserGormService)CreateUser(user *entity.User)(*entity.User,[]error){
+func(usersrv *UserGormService)CreateUser(user *entity.User)(*entity.User,[]error){
 
 	usr := user
-	usr,err:= userRepo.repo.CreateUser(user)
+	usr,err:= usersrv.repo.CreateUser(user)
 	if len(err)>0{
 		return nil,err
 	}

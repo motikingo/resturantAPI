@@ -34,10 +34,19 @@ func(itemRepo *ItemRepository) Item(id uint)(*entity.Item,[]error){
 	}
 	return &item,nil
 
+}
+
+func(itemRepo *ItemRepository) IsItemNameExist(name string)bool{
+	var item entity.Item
+	err:= itemRepo.db.First(&item,name).GetErrors()
+	if len(err)>0{
+		return false
+	}
+	return true
 
 }
 
-func(itemRepo *ItemRepository) UpdateItem(id uint,it entity.Item)(*entity.Item,[]error){
+func(itemRepo *ItemRepository) UpdateItem(it entity.Item)(*entity.Item,[]error){
 	item,err := itemRepo.Item(id)
 	if len(err)>0{
 		return nil,err
@@ -71,7 +80,7 @@ func(itemRepo *ItemRepository) DeleteItem(id uint)(*entity.Item,[]error){
 
 }
 
-func(itemRepo *ItemRepository) CreateItem(item *entity.Item)(*entity.Item,[]error){
+func(itemRepo *ItemRepository) CreateItem(item entity.Item)(*entity.Item,[]error){
 
 	it := item
 	err:= itemRepo.db.Create(&it).GetErrors()

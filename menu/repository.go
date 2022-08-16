@@ -8,7 +8,8 @@ import (
 type CatagoryRepo interface{
 	Catagories()([]entity.Catagory,[]error)
 	Catagory(id uint)(*entity.Catagory,[]error)
-	UpdateCatagory(id uint,ct entity.Catagory)(*entity.Catagory,[]error)
+	IsCatagoryNameExist(name string)bool
+	UpdateCatagory(ct entity.Catagory)(*entity.Catagory,[]error)
 	DeleteCatagory(id uint)(*entity.Catagory,[]error)
 	CreateCatagory(ct entity.Catagory)(*entity.Catagory,[]error)
 }
@@ -16,19 +17,18 @@ type CatagoryRepo interface{
 type ItemRepo interface{
 	Items()([]entity.Item,[]error)
 	Item(id uint)(*entity.Item,[]error)
-
-	UpdateItem(id uint,item entity.Item)(*entity.Item,[]error)
-
+	IsItemNameExist(name string)bool
+	UpdateItem(item entity.Item)(*entity.Item,[]error)
 	DeleteItem(id uint)(*entity.Item,[]error)
-	CreateItem(item *entity.Item)(*entity.Item,[]error)
+	CreateItem(item entity.Item)(*entity.Item,[]error)
 
 
 }
 
-type IngridientRepo interface{
-	Ingridients()([]entity.Ingridient,[]error)
-	Ingridient(id uint)(*entity.Ingridient,[]error)
-	UpdateIngridient(id uint)(*entity.Ingridient,[]error)
-	DeleteIngridient(id uint)(*entity.Ingridient,[]error)
-	CreateIngridient(id uint)(*entity.Ingridient,[]error)
+type IngredientRepo interface{
+	Ingredients()([]entity.Ingredient,[]error)
+	Ingredient(id uint)(*entity.Ingredient,[]error)
+	UpdateIngredient(id uint,ingrd entity.Ingredient)(*entity.Ingredient,[]error)
+	DeleteIngredient(id uint)(*entity.Ingredient,[]error)
+	CreateIngredient(ingrd entity.Ingredient)(*entity.Ingredient,[]error)
 }

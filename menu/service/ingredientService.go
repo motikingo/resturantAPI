@@ -32,9 +32,9 @@ func(ingrdServ *IngredientGormService) Ingredient(id uint)(*entity.Ingredient,[]
 	}
 	return ingredient,nil
 }
-func(ingrdServ *IngredientGormService)UpdateIngredient(id uint,ingr entity.Ingredient)(*entity.Ingredient,[]error){
+func(ingrdServ *IngredientGormService)UpdateIngredient(ingr entity.Ingredient)(*entity.Ingredient,[]error){
 
-	ingredient,err := ingrdServ.repo.UpdateIngredient(id,ingr)
+	ingredient,err := ingrdServ.repo.UpdateIngredient(ingr)
 	if len(err)>0{
 		return nil,err
 	}

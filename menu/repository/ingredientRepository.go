@@ -35,9 +35,9 @@ func(ingrd *IngredientGormRepository) Ingredient(id uint)(*entity.Ingredient,[]e
 	}
 	return &ingredient,nil
 }
-func(ingrd *IngredientGormRepository)UpdateIngredient(id uint,Ingr entity.Ingredient)(*entity.Ingredient,[]error){
+func(ingrd *IngredientGormRepository)UpdateIngredient(Ingr entity.Ingredient)(*entity.Ingredient,[]error){
 
-	ingredients,err := ingrd.Ingredient(id)
+	ingredients,err := ingrd.Ingredient(Ingr.ID)
 	if len(err)>0{
 		return nil,err
 	}

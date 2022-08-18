@@ -135,8 +135,8 @@ func (ingrdHandler *IngredientHandler)UpdateIngredient(w http.ResponseWriter,r *
 	if err!= nil{
 		log.Fatal(err)
 	}
-
-	ingrdUpdate,ers:=ingrdHandler.ingrdSrv.UpdateIngredient(uint(id),ingrd)
+	ingrd.ID = uint(id)
+	ingrdUpdate,ers:=ingrdHandler.ingrdSrv.UpdateIngredient(ingrd)
 
 	if ers!= nil{
 		log.Fatal(ers)
@@ -160,7 +160,7 @@ func (ingrdHandler *IngredientHandler)DeleteIngredient(w http.ResponseWriter,r *
 		return
 	}
 	igrdId:= mux.Vars(r)["id"]
-	ids,e:= strconv.Atoi(id)
+	ids,e:= strconv.Atoi(igrdId)
 
 	if e!=nil{
 		log.Fatal(err)

@@ -34,16 +34,14 @@ func(usersrv *UserGormService)GetUserByID(id uint)(*entity.User,[]error){
 }
 
 func(usersrv *UserGormService)GetUserByEmail(email string)*entity.User{
-	user,err:= usersrv.repo.GetUserByEmail(email)
-	if len(err)>0{
-		return nil,err
-	}
-	return user,nil
+	user := usersrv.repo.GetUserByEmail(email)
+	
+	return user
 }
 
 func(usersrv *UserGormService)GetUserByEmailAndID( id uint ,email string)*entity.User{
 
-	user:= usersrv.repo.GetUserByEmail(id,email)
+	user:= usersrv.repo.GetUserByEmailAndID(id,email)
 	return user
 }
 

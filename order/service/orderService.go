@@ -33,10 +33,10 @@ func(odRepo *OrderGormService)Order(id uint)(*entity.Order,[]error){
 	return order,nil
 }
 
-func(odRepo *OrderGormService)UpdateOrder(id uint,ord entity.Order)(*entity.Order,[]error){
+func(odRepo *OrderGormService)UpdateOrder(ord entity.Order)(*entity.Order,[]error){
 
 	
-	order,err := odRepo.repo.UpdateOrder(id,ord)
+	order,err := odRepo.repo.UpdateOrder(ord)
 	if len(err)>0{
 		return nil,err
 	}

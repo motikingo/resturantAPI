@@ -47,7 +47,7 @@ func(itemRepo *ItemRepository) IsItemNameExist(name string)bool{
 }
 
 func(itemRepo *ItemRepository) UpdateItem(it entity.Item)(*entity.Item,[]error){
-	item,err := itemRepo.Item(id)
+	item,err := itemRepo.Item(it.ID)
 	if len(err)>0{
 		return nil,err
 	}
@@ -87,7 +87,7 @@ func(itemRepo *ItemRepository) CreateItem(item entity.Item)(*entity.Item,[]error
 	if len(err)>0{
 		return nil,err
 	}
-	return it,nil
+	return &it,nil
 
 }
 

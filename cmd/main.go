@@ -1,17 +1,17 @@
 package main
 
 import (
-	"fmt"
+	//"fmt"
 	"log"
 	"net/http"
 
-	"os"
 
 	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 
-	"github.com/joho/godotenv"
+	//"github.com/motikingo/resturant-api/entity"
+
 	handler "github.com/motikingo/resturant-api/httpHandler"
 	menurepository "github.com/motikingo/resturant-api/menu/repository"
 	menuService "github.com/motikingo/resturant-api/menu/service"
@@ -22,95 +22,95 @@ import (
 	OrderService "github.com/motikingo/resturant-api/order/service"
 	UserReposirory "github.com/motikingo/resturant-api/user/repository"
 	UserService "github.com/motikingo/resturant-api/user/service"
+	"github.com/motikingo/resturant-api/middleware"
+	"github.com/motikingo/resturant-api/db"
+
+
 )
 
-var err error
 var db *gorm.DB
+
+func init(){
+	db = database.Connect()
+	if db != nil{
+		database.Migrate(db)
+	}
+}
+
 func main(){
-	err = godotenv.Load("../.env")
-	if err != nil{
-		log.Fatal(err)
-		return
-	}
-
-	dialect := os.Getenv("dialect")
-	user := os.Getenv("user")
-	host := os.Getenv("host")
-	//dbport := os.Getenv("dbport")
-	dbname := os.Getenv("dbname")
-	passord := os.Getenv("password")
-	dbURL := fmt.Sprintf("host=%s user=%s dbname=%s  sslmode=disable password=%s" ,host,user,dbname,passord)
-
-	//db,err = gorm.Open("postgres","user = postgres password = moti dbname = resturant sslmode=disable")
-
-
-	db,err = gorm.Open(dialect,dbURL)
-
-	if err != nil{
-		fmt.Println("opening db error")
-		log.Fatal(err)
-		return
-	}
-	defer db.Close()
-
-	db.AutoMigrate(db)
-
+	
 	r := mux.NewRouter()
 
 	session := handler.NewSessionHandler()
+
+	middleWareHan := middleware.NewMiddlewareHandler(session)
+	userRepo:= UserReposirory.NewUserGormRepository(db)
+	userSrv := UserService.NewUserGormService(userRepo)
+	userHan:= handler.NewUserHandler(userSrv,session)
+
+	r.HandleFunc("/users", middleWareHan.Authenticate(userHan.GetUsers)).Methods("GET")
+	r.HandleFunc("/users/{id:[0-9]+}",middleWareHan.Authenticate(userHan.GetUser)).Methods("GET")
+	r.HandleFunc("/signUp",userHan.CreateUser).Methods("POST")
+	r.HandleFunc("/Login",userHan.Login).Methods("POST")
+	r.HandleFunc("/Logout",middleWareHan.Authenticate(userHan.Logout)).Methods("GET")
+	r.HandleFunc("/my_orders",middleWareHan.Authenticate(userHan.MyOrders)).Methods("GET")
+	r.HandleFunc("/my_comments",middleWareHan.Authenticate(userHan.MyComments)).Methods("GET")
+	r.HandleFunc("/update/user/{id:[0-9]+}",middleWareHan.Authenticate(userHan.ChangeUserPassword)).Methods("PUT")
+	r.HandleFunc("/delete/user/{id:[0-9]+}",middleWareHan.Authenticate(userHan.DeleteUser)).Methods("DELETE")	
+
+	adminRepo:= UserReposirory.NewUserGormRepository(db)
+	adminSrv := UserService.NewUserGormService(adminRepo)
+	adminHan:= handler.NewAdminHandler(adminSrv,session)
+
+	// r.HandleFunc("/admin",adminHan.GetUsers).Methods("GET")
+	// r.HandleFunc("/admin/{id:[0-9]+}",adminHan.GetUser).Methods("GET")
+	r.HandleFunc("admin/signUp",adminHan.CreateAdmin).Methods("POST")
+	r.HandleFunc("admin/Login",adminHan.Login).Methods("POST")
+	r.HandleFunc("admin/Logout", middleWareHan.Authenticate(adminHan.Logout)).Methods("GET")
+	r.HandleFunc("/Change_password/admin/{id:[0-9]+}",middleWareHan.Authenticate(adminHan.ChangeAdminPassword)).Methods("PUT")
+	r.HandleFunc("/delete/admin/{id:[0-9]+}",middleWareHan.Authenticate(adminHan.DeleteAdmin)).Methods("DELETE")	
+	log.Fatal(http.ListenAndServe(":80",r))
 
 	cataRepo:= menurepository.NewCatagoryGormRepository(db)
 	catSrvc := menuService.NewCatagoryGormService(cataRepo)
 	cataHandler := handler.NewCatagoryHandler(catSrvc,session)
 
-	r.HandleFunc("/",cataHandler.GetCatagories).Methods("GET")
-	r.HandleFunc("/catagory/{id:[0-9]+}",cataHandler.GetCatagory).Methods("GET")
-	r.HandleFunc("/create/catagory/",cataHandler.CreateCatagory).Methods("POST")
-	r.HandleFunc("/update/catagory/{id:[0-9]+}",cataHandler.UpdateCatagory).Methods("PUT")
-	r.HandleFunc("/delete/catagory/{id:[0-9]+}",cataHandler.DeleteCatagory).Methods("DELETE")
-
+	r.HandleFunc("/",middleWareHan.Authenticate(cataHandler.GetCatagories)).Methods("GET")
+	r.HandleFunc("/catagory/{id:[0-9]+}",middleWareHan.Authenticate(cataHandler.GetCatagory)).Methods("GET")
+	r.HandleFunc("/create/catagory/",middleWareHan.Authenticate(cataHandler.CreateCatagory)).Methods("POST")
+	r.HandleFunc("/update/catagory/{id:[0-9]+}",middleWareHan.Authenticate(cataHandler.UpdateCatagory)).Methods("PUT")
+	r.HandleFunc("/delete/catagory/{id:[0-9]+}",middleWareHan.Authenticate(cataHandler.DeleteCatagory)).Methods("DELETE")
 
 	commRepo := CommentRepository.NewCommentRepo(db)
 	commSrv := CommentService.NewCommentService(commRepo)
 	commHandler := handler.NewCommentHandler(commSrv,session)
 
-	r.HandleFunc("/comments",commHandler.GetComments).Methods("GET")
-	r.HandleFunc("/comments/{id:[0-9]+}",commHandler.GetComment).Methods("GET")
-	r.HandleFunc("/create/comment/",commHandler.CreateComment).Methods("POST")
-	//r.HandleFunc("/form/comment/",commHandler.FormComment).Methods("GET")
-
-	r.HandleFunc("/update/comment/{id:[0-9]+}",commHandler.UpdateComment).Methods("PUT")
-	r.HandleFunc("/delete/comment/{id:[0-9]+}",commHandler.DeleteComment).Methods("DELETE")
+	r.HandleFunc("/comments",middleWareHan.Authenticate(commHandler.GetComments)).Methods("GET")
+	r.HandleFunc("/comments/{id:[0-9]+}",middleWareHan.Authenticate(commHandler.GetComment)).Methods("GET")
+	r.HandleFunc("/create/comment/",middleWareHan.Authenticate(commHandler.CreateComment)).Methods("POST")
+	r.HandleFunc("/update/comment/{id:[0-9]+}",middleWareHan.Authenticate(commHandler.UpdateComment)).Methods("PUT")
+	r.HandleFunc("/delete/comment/{id:[0-9]+}",middleWareHan.Authenticate(commHandler.DeleteComment)).Methods("DELETE")
 
 	ordRepo:= OrderRespository.NewOrderGormRespository(db)
 	ordService:=OrderService.NewOrderGormService(ordRepo)
 	ordHandler:= handler.NewOrderHandler(ordService,session)
 
-	r.HandleFunc("/{user_id:[0-9]+}/orders",ordHandler.GetOrders).Methods("GET")
-	r.HandleFunc("/orders/{user_id:[0-9]+}/{id:[0-9]+}",ordHandler.GetOrder).Methods("GET")
-	r.HandleFunc("/create/{user_id:[0-9]+}/order/",ordHandler.CreateOrder).Methods("POST")
-	r.HandleFunc("/update/user/order/{id:[0-9]+}",ordHandler.UpdateOrder).Methods("PUT")
-	r.HandleFunc("/delete/user/order/{id:[0-9]+}",ordHandler.DeleteOrder).Methods("DELETE")
+	//r.HandleFunc("/orders",middleWareHan.Authenticate(ordHandler.)).Methods("GET")
+	r.HandleFunc("/orders/{id:[0-9]+}",middleWareHan.Authenticate(ordHandler.GetOrder)).Methods("GET")
+	r.HandleFunc("/create/order/",middleWareHan.Authenticate(ordHandler.CreateOrder)).Methods("POST")
+	r.HandleFunc("/update/order/{id:[0-9]+}",middleWareHan.Authenticate(ordHandler.UpdateOrder)).Methods("PUT")
+	r.HandleFunc("/delete/order/{id:[0-9]+}",middleWareHan.Authenticate(ordHandler.DeleteOrder)).Methods("DELETE")
 
 	itemRepo := menurepository.NewItemRepository(db)
 	itemSrv := menuService.NewItemGormService(itemRepo)
 	itemHandler:=handler.NewItemHandler(itemSrv,session)
 
-	r.HandleFunc("/Items",itemHandler.GetItems).Methods("GET")
-	r.HandleFunc("/Items/{id:[0-9]+}",itemHandler.GetItem ).Methods("GET")
-	r.HandleFunc("/create/Item/",itemHandler.CreateItem ).Methods("POST")
-	r.HandleFunc("/update/Items/{id:[0-9]+}",itemHandler.UpdateItem ).Methods("PUT")
-	r.HandleFunc("/detelet/Items/{id:[0-9]+}",itemHandler.DeleteItem ).Methods("DELETE")
+	r.HandleFunc("/Items",middleWareHan.Authenticate(itemHandler.GetItems)).Methods("GET")
+	r.HandleFunc("/Items/{id:[0-9]+}",middleWareHan.Authenticate(itemHandler.GetItem)).Methods("GET")
+	r.HandleFunc("/create/Item/",middleWareHan.Authenticate(itemHandler.CreateItem)).Methods("POST")
+	r.HandleFunc("/update/Items/{id:[0-9]+}",middleWareHan.Authenticate(itemHandler.UpdateItem)).Methods("PUT")
+	r.HandleFunc("/detelet/Items/{id:[0-9]+}",middleWareHan.Authenticate(itemHandler.DeleteItem)).Methods("DELETE")
 	
-	userRepo:= UserReposirory.NewUserGormRepository(db)
-	userSrv := UserService.NewUserGormService(userRepo)
-	userHan:= handler.NewUserHandler(userSrv,session)
-
-	r.HandleFunc("/users",userHan.GetUsers).Methods("GET")
-	r.HandleFunc("/users/{id:[0-9]+}",userHan.GetUser).Methods("GET")
-	r.HandleFunc("/signUp",userHan.CreateUser).Methods("POST")
-	r.HandleFunc("/update/user/{id:[0-9]+}",userHan.UpdateUser).Methods("PUT")
-	r.HandleFunc("/delete/user/{id:[0-9]+}",userHan.DeleteUser).Methods("DELETE")	
 	log.Fatal(http.ListenAndServe(":80",r))
 
 }

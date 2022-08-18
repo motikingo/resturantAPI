@@ -2,12 +2,10 @@ package handler
 
 import (
 	"encoding/json"
-	"go/types"
 	//"fmt"
 	"log"
 
 	//"fmt"
-	"html/template"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -15,11 +13,16 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/motikingo/resturant-api/entity"
 	"github.com/motikingo/resturant-api/helper"
+	"github.com/motikingo/resturant-api/order"
 	"github.com/motikingo/resturant-api/user"
+	"github.com/motikingo/resturant-api/comment"
+
 )
 
 type UserHandler struct{
 	userSrvc user.UserService
+	orderserv Order.OrderService
+	commSrv comment.CommentService
 	session *SessionHandler
 }
 
@@ -62,7 +65,7 @@ func(usrHan *UserHandler)GetUser(w http.ResponseWriter,r *http.Request){
 		log.Fatal(err)
 	}
 
-	user,err:=usrHan.userSrvc.User(uint(ids))
+	user,err:=usrHan.userSrvc.GetUserByID(uint(ids))
 	if err!=nil{
 		log.Fatal(err)
 	}
@@ -99,7 +102,7 @@ func(usrHan *UserHandler)CreateUser(w http.ResponseWriter,r *http.Request){
 		}
 		
 		er:= json.Unmarshal(read,&input)
-		if er !=nil || input.email = "" || input.password = "" || input.confirm_password==""{
+		if er !=nil || input.email == "" || input.password == "" || input.confirm_password==""{
 			w.Write(helper.MarshalResponse(response))
 			return
 		}
@@ -152,10 +155,11 @@ func(usrHan *UserHandler)ChangeUserPassword(w http.ResponseWriter,r *http.Reques
 		w.Write([]byte("UnAuthorized user"))
 		return
 	}
-	var user entity.User
+
 	var oldPassword,newPassword string
 	var err []error
-	user,err = usrHan.userSrvc.GetUserByID(sess.UserID)
+	userId,_ := strconv.Atoi(sess.UserID)
+	user,err := usrHan.userSrvc.GetUserByID(uint(userId))
 
 	if len(err)>0{
 		w.Write([]byte("no user with given Id"))
@@ -184,7 +188,7 @@ func(usrHan *UserHandler)ChangeUserPassword(w http.ResponseWriter,r *http.Reques
 	if er !=nil{
 		return
 	}
-	userUpdated,errs:=usrHan.userSrvc.UpdateUser(user)
+	userUpdated,errs:=usrHan.userSrvc.UpdateUser(*user)
 
 	if errs!=nil{
 		log.Fatal(err)
@@ -288,6 +292,78 @@ func(usrHan *UserHandler)Logout(w http.ResponseWriter,r *http.Request){
 	w.Write(helper.MarshalResponse(response))
 
 }
+func(usrHan *UserHandler)MyOrders(w http.ResponseWriter,r *http.Request){
+	w.Header().Set("Content-Type","application/json")
+	sess := usrHan.session.GetSession(r)
+	response := &struct{
+		status string
+		orders []entity.Order
+	}{
+		status: "UnAthorized User",
+	}
+	if sess == nil {
+		w.Write(helper.MarshalResponse(response))
+		return
+	}
+	orders,ers := usrHan.orderserv.Orders()
+	if len(orders)<1 || len(ers)>0{
+		response.status = "No order found"
+		w.Write(helper.MarshalResponse(response))
+		return
+	}
+	id,_ := strconv.Atoi(sess.UserID) 
+	for _,order := range orders{
+		if order.UserID == uint(id){
+			response.orders = append(response.orders, order)
+		}
+	}
+	if len(response.orders)<0{
+		response.status = "No order found"
+		w.Write(helper.MarshalResponse(response))
+		return
+	}
+
+	response.status = "Orders retrieved"
+	w.Write(helper.MarshalResponse(response))
+
+}
+
+func(usrHan *UserHandler)MyComments(w http.ResponseWriter,r *http.Request){
+	w.Header().Set("Content-Type","application/json")
+	sess := usrHan.session.GetSession(r)
+	response := &struct{
+		status string
+		comments []entity.Comment
+	}{
+		status: "UnAthorized User",
+	}
+	if sess == nil {
+		w.Write(helper.MarshalResponse(response))
+		return
+	}
+	comments,ers := usrHan.commSrv.Comments()
+	if len(comments)<1 || len(ers)>0{
+		response.status = "No comment found"
+		w.Write(helper.MarshalResponse(response))
+		return
+	}
+	id,_ := strconv.Atoi(sess.UserID) 
+	for _,comment := range comments{
+		if comment.UserID == uint(id){
+			response.comments = append(response.comments, comment)
+		}
+	}
+	if len(response.comments)<0{
+		response.status = "No comment found"
+		w.Write(helper.MarshalResponse(response))
+		return
+	}
+
+	response.status = "comment retrieved"
+	w.Write(helper.MarshalResponse(response))
+
+}
+
 
 func(usrHan *UserHandler)DeleteUser(w http.ResponseWriter,r *http.Request){
 	w.Header().Set("Content-Type","application/json")
@@ -306,7 +382,8 @@ func(usrHan *UserHandler)DeleteUser(w http.ResponseWriter,r *http.Request){
 		w.Write(helper.MarshalResponse(respose))
 		return
 	}
-	user,err:=usrHan.userSrvc.GetUserByID(sess.UserID)
+	id,_ := strconv.Atoi(sess.UserID) 
+	user,err:=usrHan.userSrvc.GetUserByID(uint(id))
 	if err!=nil || user == nil{
 		w.Write(helper.MarshalResponse(respose))
 		log.Fatal(err)

@@ -3,7 +3,6 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"log"
 
 	//"fmt"
@@ -158,7 +157,7 @@ func(catHandler *CatagoryHandler) CreateCatagory(w http.ResponseWriter,r *http.R
 			return
 		} 
 		item.Catagories = append(item.Catagories, string(cat.ID))
-		item,ers = catHandler.itemSrv.UpdateItem(item)
+		item,ers = catHandler.itemSrv.UpdateItem(*item)
 		if len(ers)>0 || item == nil{
 			respose.message = "Internal server error"
 			w.Write(helper.MarshalResponse(respose))
@@ -293,9 +292,9 @@ func(catHandler *CatagoryHandler) AddItem(w http.ResponseWriter,r *http.Request)
 		}
 	}
 	cat.Items = append(cat.Items, item_id)
-	cat,err = catHandler.catSrv.UpdateCatagory(cat)
+	cat,err = catHandler.catSrv.UpdateCatagory(*cat)
 	item.Catagories = append(item.Catagories, cat_id)
-	item,er = catHandler.itemSrv.UpdateItem(item)
+	item,er = catHandler.itemSrv.UpdateItem(*item)
 
 	if item==nil || cat == nil || len(er)>0 || len(err)>0{
 		response.message = "Internal server Error"
@@ -407,8 +406,8 @@ func(catHandler *CatagoryHandler) DeleteItem(w http.ResponseWriter,r *http.Reque
 		}
 	}
 	
-	cat,err = catHandler.catSrv.UpdateCatagory(cat)
-	item,er = catHandler.itemSrv.UpdateItem(item)
+	cat,err = catHandler.catSrv.UpdateCatagory(*cat)
+	item,er = catHandler.itemSrv.UpdateItem(*item)
 
 	if item==nil || cat == nil || len(er)>0 || len(err)>0{
 		response.message = "Internal server Error"
@@ -457,11 +456,11 @@ func(catHandler *CatagoryHandler) DeleteCatagory(w http.ResponseWriter,r *http.R
 		}
 
 		for _,c_id:= range item.Catagories{
-			if c_id != ids {
+			if c_id != id {
 				item.Catagories = append(item.Catagories, c_id)				
 			}
 		}
-		item,er = catHandler.itemSrv.UpdateItem(item)
+		item,er = catHandler.itemSrv.UpdateItem(*item)
 
 		if len(er)>0 || item ==nil{
 			response.message = "Internal Server Error"

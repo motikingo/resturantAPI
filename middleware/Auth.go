@@ -2,16 +2,24 @@ package middleware
 
 import (
 	"net/http"
-
-	"github.com/gorilla/mux"
-	//"go.mongodb.org/mongo-driver/x/mongo/driver/session"
+	handler "github.com/motikingo/resturant-api/httpHandler"
 )
 
-func Authenticate(hand http.HandlerFunc) http.HandlerFunc{
-	return http.HandleFunc(func (w http.ResponseWriter, r *http.Request)  {
-		session := SessionHandler.GetSession(r)
-		if session == nil{
-			w.Write([]byte("UnAuthorized user"))
+
+type MiddlewareHandler struct{
+	session *handler.SessionHandler
+}
+
+func NewMiddlewareHandler(	session *handler.SessionHandler) *MiddlewareHandler  {
+	return &MiddlewareHandler{session:session}
+}
+
+func (middleHa *MiddlewareHandler) Authenticate(hand http.HandlerFunc) http.HandlerFunc{
+	return http.HandlerFunc(func (w http.ResponseWriter, r *http.Request)  {
+		sess := middleHa.session.GetSession(r)
+		if sess == nil{
+			http.Error(w,http.StatusText(http.StatusUnauthorized),http.StatusUnauthorized)
+			return
 		}
 		hand.ServeHTTP(w,r)
 

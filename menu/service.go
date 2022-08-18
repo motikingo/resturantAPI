@@ -8,7 +8,7 @@ type CatagorySrv interface{
 	Catagories()([]entity.Catagory,[]error)
 	Catagory(id uint)(*entity.Catagory,[]error)
 	IsCatagoryNameExist(name string)bool
-	UpdateCatagory(id uint,ct entity.Catagory)(*entity.Catagory,[]error)
+	UpdateCatagory(ct entity.Catagory)(*entity.Catagory,[]error)
 	DeleteCatagory(id uint)(*entity.Catagory,[]error)
 	CreateCatagory(ct entity.Catagory)(*entity.Catagory,[]error)
 }

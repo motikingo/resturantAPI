@@ -36,18 +36,16 @@ func(itemRepo *ItemGormService) Item(id uint)(*entity.Item,[]error){
 }
 
 func(itemRepo *ItemGormService)IsItemNameExist(name string)bool{
-	var item entity.Item
-	item,err := itemRepo.repo.IsItemNameExist(name)
-	if len(err)>0{
-		return false
-	}
-	return true
+
+	item := itemRepo.repo.IsItemNameExist(name)
+	
+	return item 
 
 }
 
 func(itemRepo *ItemGormService) UpdateItem(it entity.Item)(*entity.Item,[]error){
 	
-	item,err := itemRepo.repo.UpdateItem(id,it)
+	item,err := itemRepo.repo.UpdateItem(it)
 	if len(err)>0{
 		return nil,err
 	}

@@ -34,9 +34,9 @@ func(odRepo *OrderGormRespository)Order(id uint)(*entity.Order,[]error){
 	return &order,nil
 }
 
-func(odRepo *OrderGormRespository)UpdateOrder(id uint,ord entity.Order)(*entity.Order,[]error){
+func(odRepo *OrderGormRespository)UpdateOrder(ord entity.Order)(*entity.Order,[]error){
 
-	order,err:=odRepo.Order(id)
+	order,err:=odRepo.Order(ord.ID)
 	if len(err)>0{
 		return nil,err
 	}

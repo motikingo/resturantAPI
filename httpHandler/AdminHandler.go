@@ -17,9 +17,10 @@ type AdminHandler struct{
 	session *SessionHandler
 }
 
-func NewAdminHandler(usersrv user.UserService) *AdminHandler{
-	return &AdminHandler{usersrv: usersrv}
+func NewAdminHandler(usersrv user.UserService,session *SessionHandler) *AdminHandler{
+	return &AdminHandler{usersrv:usersrv, session:session }
 }
+
 
 func(adminHan *AdminHandler)CreateAdmin(w http.ResponseWriter,r *http.Request){
 	w.Header().Set("Content-Type","application/json")
@@ -58,8 +59,7 @@ func(adminHan *AdminHandler)CreateAdmin(w http.ResponseWriter,r *http.Request){
 		if input.password != input.confirm_password {
 			response.status = "confirm password is not the same"
 			w.Write(helper.MarshalResponse(response))
-			return
-			
+			return			
 		}
 
 		if adminHan.usersrv.GetUserByEmail(input.email) != nil {
@@ -68,6 +68,7 @@ func(adminHan *AdminHandler)CreateAdmin(w http.ResponseWriter,r *http.Request){
 			return
 			
 		}
+		
 		input.password = helper.HashPassword(input.password)
 		if input.password == ""{
 			response.status ="Internal server error"
@@ -137,7 +138,7 @@ func(adminHan *AdminHandler)ChangeAdminPassword(w http.ResponseWriter,r *http.Re
 		log.Fatal(err)
 	}
 	
-	userUpdated,errs:=adminHan.usersrv.UpdateUser(admin)
+	userUpdated,errs:=adminHan.usersrv.UpdateUser(*admin)
 
 	if errs!=nil{
 		log.Fatal(err)

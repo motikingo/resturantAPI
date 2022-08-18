@@ -96,6 +96,7 @@ func (itemHa *ItemHandler)CreateItem(w http.ResponseWriter,r *http.Request){
 		price float64
 		description string
 		imageurl string
+		number int
 		ingredient []string
 	}{}
 	if session == nil || session.Role !="Admin"{
@@ -115,7 +116,7 @@ func (itemHa *ItemHandler)CreateItem(w http.ResponseWriter,r *http.Request){
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
-	if input.name == "" || input.price == 0 || input.description == "" || input.imageurl == "" || len(input.ingredient)<1{
+	if input.name == "" || input.price == 0 || input.description == "" || input.imageurl == "" || len(input.ingredient)<1|| input.number<1{
 		response.message = "Invalid input"
 		w.Write(helper.MarshalResponse(response))
 		return
@@ -130,6 +131,7 @@ func (itemHa *ItemHandler)CreateItem(w http.ResponseWriter,r *http.Request){
 		Price: input.price,
 		Description: input.description,
 		Image: input.imageurl,
+		Number: input.number,
 		Ingridients: input.ingredient,
 	}
 	item,err:= itemHa.itemSrv.CreateItem(itm)
@@ -193,7 +195,6 @@ func (itemHa *ItemHandler)UpdateItem(w http.ResponseWriter,r *http.Request){
 		Price: input.price,
 		Description: input.description,
 		Image: input.imageurl,
-		Ingridients: input.ingredient,
 	}
 	itm.ID = uint(id)
 	itemUpdate,ers:=itemHa.itemSrv.UpdateItem(itm)
@@ -410,7 +411,7 @@ func (itemHa *ItemHandler)DeleteItem(w http.ResponseWriter,r *http.Request){
 				cat.Items = append(cat.Items, c)
 			}
 		}
-		_,ers  = itemHa.catsrv.UpdateCatagory(cat)
+		_,ers  = itemHa.catsrv.UpdateCatagory(*cat)
 
 		if ers!=nil{
 			return

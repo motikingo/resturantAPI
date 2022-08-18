@@ -28,7 +28,7 @@ type ItemRepo interface{
 type IngredientRepo interface{
 	Ingredients()([]entity.Ingredient,[]error)
 	Ingredient(id uint)(*entity.Ingredient,[]error)
-	UpdateIngredient(id uint,ingrd entity.Ingredient)(*entity.Ingredient,[]error)
+	UpdateIngredient(ingrd entity.Ingredient)(*entity.Ingredient,[]error)
 	DeleteIngredient(id uint)(*entity.Ingredient,[]error)
 	CreateIngredient(ingrd entity.Ingredient)(*entity.Ingredient,[]error)
 }

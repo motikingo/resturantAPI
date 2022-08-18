@@ -38,7 +38,7 @@ func(cat *CatagoryGormService)IsCatagoryNameExist(name string)bool{
 
 func(cat *CatagoryGormService)UpdateCatagory(ct entity.Catagory)(*entity.Catagory,[]error){
 	
-	catagory,err:= cat.repo.UpdateCatagory(id,ct) 
+	catagory,err:= cat.repo.UpdateCatagory(ct) 
 	if len(err)>0{
 		return nil,err
 	}

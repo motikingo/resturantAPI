@@ -42,18 +42,18 @@ type Item struct{
 type Order struct{
 	gorm.Model
 	PlaceAt time.Time 	`json :"placeAt" gorm:"type:time;not null"`
-	ItemID uint 		`json :"itemsid"`
-	CatagoryID uint 	`json :"catagoryid"`
-	UserID uint 		`json :"userid"`
-	Number int 			`json : "count"`
-	Orderbill float64 	`json: "order_bill"`
+	ItemID uint 		`json :"itemsid" gorm:"type:varchar(255);not null"`
+	CatagoryID uint 	`json :"catagoryid"  gorm:type:"varchar(255);not null"`
+	UserID uint 		`json :"userid" gorm:"type:varchar(255);not null"`
+	Number int 			`json : "count" gorm:"type:varchar(255);not null"` 
+	Orderbill float64 	`json: "order_bill" gorm:"type:varchar(255);not null"`
 }
 
 type Catagory struct{
 	gorm.Model
-	Name string		 `json:"name" "gorm:type:varchar(255);not null"`
-	ImageUrl string  `json:"image" "gorm:type:varchar(255);not null"`
-	Items []Item 	 `json:"items"gorm:"many2many:catagory_items;"`
+	Name string		 `json:"name"  gorm:"type:varchar(255);not null"`
+	ImageUrl string  `json:"image" gorm:"type:varchar(255);not null"`
+	Items []Item 	 `json:"items" gorm:"many2many:catagory_items;"`
 
 }
 

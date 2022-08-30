@@ -31,20 +31,34 @@ func (middleHa *MiddlewareHandler) Authenticate(hand http.HandlerFunc) http.Hand
 	})
 }
 
-func (middleHa *MiddlewareHandler) OnlyAdminAuthenticate(hand http.HandlerFunc) http.HandlerFunc{
+func (middleHa *MiddlewareHandler)sessioShouldNotExist(hand http.HandlerFunc) http.HandlerFunc{
 	return http.HandlerFunc(func (w http.ResponseWriter, r *http.Request)  {
 		fmt.Println("gggg")
 		
 		sess := middleHa.session.GetSession(r)
 		//fmt.Println(sess)
 
-		if sess == nil || sess.Role != "Admin" {
-			http.Error(w,http.StatusText(http.StatusUnauthorized),http.StatusUnauthorized)
+		if sess != nil{
+			http.Error(w,"Session Already Exist",http.StatusBadRequest)
 			return
 		}
 		hand.ServeHTTP(w,r)
 
 	})
 }
+func (middleHa *MiddlewareHandler)OnlyAdminAuth(hand http.HandlerFunc) http.HandlerFunc{
+	return http.HandlerFunc(func (w http.ResponseWriter, r *http.Request)  {
+		fmt.Println("gggg")
+		
+		sess := middleHa.session.GetSession(r)
+		//fmt.Println(sess)
 
+		if sess == nil || sess.Role != "Role"{
+			http.Error(w,http.StatusText(http.StatusUnauthorized),http.StatusBadRequest)
+			return
+		}
+		hand.ServeHTTP(w,r)
+
+	})
+}
 //var  y= mux.MiddlewareFunc(http.handler)

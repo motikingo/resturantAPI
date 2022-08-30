@@ -11,6 +11,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/motikingo/resturant-api/entity"
+	"github.com/motikingo/resturant-api/helper"
 	"github.com/motikingo/resturant-api/menu"
 )
 
@@ -21,7 +22,7 @@ type IngredientHandler struct{
 	session *SessionHandler
 }
 
-func NewIngredientHandler(ingrdSrv menu.IngredientService,session *SessionHandler)IngredientHandler{
+func NewIngredientHandler(ingrdSrv menu.IngredientService,itemsrv menu.ItemService,session *SessionHandler)IngredientHandler{
 
 	return IngredientHandler{ingrdSrv:ingrdSrv,session:session}
 }
@@ -39,13 +40,8 @@ func (ingrdHandler *IngredientHandler)GetIngredients(w http.ResponseWriter,r *ht
 		log.Fatal(err)
 	}
 
-	igrdMar,er:= json.MarshalIndent(igrd,"","/t/")
 
-	if er!=nil{
-		log.Fatal(err)
-	}
-
-	w.Write(igrdMar)
+	w.Write(helper.MarshalResponse(igrd))
 
 
 }
@@ -69,16 +65,12 @@ func (ingrdHandler *IngredientHandler)GetIngredient(w http.ResponseWriter,r *htt
 		log.Fatal(err)
 	}
 
-	igrdMar,er:= json.MarshalIndent(igrd,"","/t/")
+	
 
-	if er!=nil{
-		log.Fatal(err)
-	}
-
-	w.Write(igrdMar)
+	w.Write(helper.MarshalResponse(igrd))
 }
 
-func (ingrdHandler *IngredientHandler)CreateIngredients(w http.ResponseWriter,r *http.Request){
+func (ingrdHandler *IngredientHandler)CreateIngredient(w http.ResponseWriter,r *http.Request){
 	w.Header().Set("Content-Type","application/json")
 	session := ingrdHandler.session.GetSession(r)
 	if session == nil || session.Role != "Admin"{
@@ -101,13 +93,8 @@ func (ingrdHandler *IngredientHandler)CreateIngredients(w http.ResponseWriter,r 
 		log.Fatal(err)
 	}
 
-	ingrdMar,err:= json.MarshalIndent(ingrdAdd,"","/t/")
 
-	if er!=nil{
-		log.Fatal(err)
-	}
-
-	w.Write(ingrdMar)
+	w.Write(helper.MarshalResponse(ingrdAdd))
 }
 
 func (ingrdHandler *IngredientHandler)UpdateIngredient(w http.ResponseWriter,r *http.Request){
@@ -142,13 +129,8 @@ func (ingrdHandler *IngredientHandler)UpdateIngredient(w http.ResponseWriter,r *
 		log.Fatal(ers)
 	}
 
-	itemMar,errr:=json.MarshalIndent(ingrdUpdate,"","'r/r/")
-
-
-	if errr!= nil{
-		log.Fatal(errr)
-	}
-	w.Write(itemMar)
+	
+	w.Write(helper.MarshalResponse(ingrdUpdate))
 }
 
 func (ingrdHandler *IngredientHandler)DeleteIngredient(w http.ResponseWriter,r *http.Request){
@@ -174,8 +156,8 @@ func (ingrdHandler *IngredientHandler)DeleteIngredient(w http.ResponseWriter,r *
 	for _,item := range items{
 		check := false
 		for _,i := range item.Ingridients{
-			if igrdId != i{
-				item.Ingridients = append(item.Ingridients, i)
+			if ids != int(i.ID){
+				item.Ingridients = append(item.Ingridients,i)
 			}else{
 				check = true
 			}
@@ -195,12 +177,5 @@ func (ingrdHandler *IngredientHandler)DeleteIngredient(w http.ResponseWriter,r *
 		log.Fatal(err)
 	}
 
-
-	ingrdMar,er:= json.MarshalIndent(ingrd,"","/t/")
-
-	if er!=nil{
-		log.Fatal(err)
-	}
-
-	w.Write(ingrdMar)
+	w.Write(helper.MarshalResponse(ingrd))
 }

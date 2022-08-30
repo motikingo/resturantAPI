@@ -2,7 +2,11 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
+	// "fmt"
 	"log"
+
+	//"reflect"
 
 	//"fmt"
 	"io/ioutil"
@@ -23,11 +27,12 @@ type ItemHandler struct{
 	session *SessionHandler
 	ingrd menu.IngredientService
 	catsrv menu.CatagorySrv
+	//userV user.UserService
 }
 
-func NewItemHandler(itemSrv menu.ItemService,session *SessionHandler)ItemHandler{
+func NewItemHandler(itemSrv menu.ItemService,session *SessionHandler,ingrd menu.IngredientService,catsrv menu.CatagorySrv)ItemHandler{
 
-	return ItemHandler{itemSrv:itemSrv,session: session}
+	return ItemHandler{itemSrv:itemSrv,session:session,ingrd:ingrd,catsrv:catsrv}
 }
 
 func (itemHa *ItemHandler)GetItems(w http.ResponseWriter,r *http.Request){
@@ -49,12 +54,13 @@ func (itemHa *ItemHandler)GetItems(w http.ResponseWriter,r *http.Request){
 
 func (itemHa *ItemHandler)GetItem(w http.ResponseWriter,r *http.Request){
 	w.Header().Set("Content-Type","application/json")
-	response := &struct{
-		message string
-		item *entity.Item
+	response := struct{
+		Message string
+		Item entity.Item
 	}{
-		message: "Unauthorized user",
+		Message: "UnAuthorized User",
 	}
+	
 	session := itemHa.session.GetSession(r)
 	if session == nil{
 		w.Write(helper.MarshalResponse(response))
@@ -64,20 +70,20 @@ func (itemHa *ItemHandler)GetItem(w http.ResponseWriter,r *http.Request){
 	ids,e:= strconv.Atoi(id)
 
 	if e!=nil{
-		response.message = "They given Id is not Integer."
+		response.Message = "They given Id is not Integer."
 		w.Write(helper.MarshalResponse(response))
 
 	}
 
 	item,err:= itemHa.itemSrv.Item(uint(ids))
 	if err!=nil{
-		response.message = "No such Item"
+		response.Message = "No such Item"
 		w.Write(helper.MarshalResponse(response))
 	}
 
-	response.message = "get Item successfully"
-	response.item = item 
-
+	response.Message = "get Item successfully"
+	response.Item = *item 
+	//a,_:=json.Marshal(response)
 	w.Write(helper.MarshalResponse(response))
 }
 
@@ -86,18 +92,18 @@ func (itemHa *ItemHandler)CreateItem(w http.ResponseWriter,r *http.Request){
 	w.Header().Set("Content-Type","application/json")
 	session := itemHa.session.GetSession(r)
 	response := &struct{
-		message string
-		item *entity.Item
+		Message string
+		Item *entity.Item
 	}{
-		message: "UnAuthorized User",
+		Message: "UnAuthorized User",
 	}
 	input := &struct{
-		name string
-		price float64
-		description string
-		imageurl string
-		number int
-		ingredient []string
+		Name string `json:"name"`
+		Price float64 `json:"price"`
+		Description string `json:"description"`
+		Imageurl string `json:"image"`
+		Number int `json:"number"`
+		Ingredient []int `json:"ingredients"`
 	}{}
 	if session == nil || session.Role !="Admin"{
 		w.Write(helper.MarshalResponse(response))
@@ -106,43 +112,59 @@ func (itemHa *ItemHandler)CreateItem(w http.ResponseWriter,r *http.Request){
 	read,er:= ioutil.ReadAll(r.Body)
 
 	if er!=nil{
-		response.message = "Internal Server Error"
+		response.Message = "Internal Server Error"
 		w.Write(helper.MarshalResponse(response))
 	}
 	e:= json.Unmarshal(read,&input)
 
 	if e!=nil{
-		response.message = "Internal Server Error"
-		w.Write(helper.MarshalResponse(response))
-		return
-	}
-	if input.name == "" || input.price == 0 || input.description == "" || input.imageurl == "" || len(input.ingredient)<1|| input.number<1{
-		response.message = "Invalid input"
-		w.Write(helper.MarshalResponse(response))
-		return
-	}
-	if itemHa.itemSrv.IsItemNameExist(input.name){
-		response.message = "Item name already exist"
-		w.Write(helper.MarshalResponse(response))
-		return
-	}
-	itm := entity.Item{
-		Name: input.name,
-		Price: input.price,
-		Description: input.description,
-		Image: input.imageurl,
-		Number: input.number,
-		Ingridients: input.ingredient,
-	}
-	item,err:= itemHa.itemSrv.CreateItem(itm)
-	if err!=nil{
-		response.message = "Internal server Error"
+		response.Message = "Internal Server Error"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
 
-	response.message = "create successful"
-	response.item = item
+	if input.Name == "" || input.Price == 0 || input.Description == "" || input.Imageurl == "" || len(input.Ingredient)<1|| input.Number<1{
+		response.Message = "Invalid input"
+		w.Write(helper.MarshalResponse(response))
+		return
+	}
+	if itemHa.itemSrv.IsItemNameExist(input.Name){
+		response.Message = "Item name already exist"
+		w.Write(helper.MarshalResponse(response))
+		return
+	}
+
+	var igrds []entity.Ingredient
+
+	for _,ig:=range input.Ingredient{
+		igrd,ers := itemHa.ingrd.Ingredient(uint(ig))
+		if len(ers)>0{
+			response.Message = "Internal server Error"
+			w.Write(helper.MarshalResponse(response))
+			return
+		}
+		igrds = append(igrds, *igrd)
+	}
+
+	//fmt.Println(reflect.TypeOf(input.Ingredient[0]))
+	itm := entity.Item{
+		Name: input.Name,
+		Price: input.Price,
+		Description: input.Description,
+		Image: input.Imageurl,
+		Number: input.Number,
+		Ingridients: igrds,
+	}
+	
+	item,err:= itemHa.itemSrv.CreateItem(itm)
+	if err!=nil{
+		response.Message = "Internal server Error"
+		w.Write(helper.MarshalResponse(response))
+		return
+	}
+
+	response.Message = "create successful"
+	response.Item = item
 
 	w.Write(helper.MarshalResponse(response))
 }
@@ -151,50 +173,61 @@ func (itemHa *ItemHandler)UpdateItem(w http.ResponseWriter,r *http.Request){
 
 	w.Header().Set("Content-Type","application/json")
 	response := &struct{
-		message string
-		item *entity.Item
+		Message string
+		Item *entity.Item
 	}{
-		message: "UnAuthorized User",
+		Message: "UnAuthorized User",
 	}
 	input := &struct{
-		name string
-		price float64
-		description string
-		imageurl string
+		Name string `json:"name"`
+		Price float64 `json:"price"`
+		Description string  `json:"description"`
+		Imageurl string  `json:"imageurl"`
+		Number int 		`json:"number"`
 	}{}
 	session := itemHa.session.GetSession(r)
-	if session == nil|| session.Role == "Admin"{
+	if session == nil|| session.Role != "Admin"{
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
-	ids:= mux.Vars(r)["id"]
-	id,e:=strconv.Atoi(ids)
+	
+	id,e:=strconv.Atoi( mux.Vars(r)["id"])
 
 	if e!= nil{
-		response.message = "Internal Server Error"
+		response.Message = "Internal Server Error"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
 	read,er:=ioutil.ReadAll(r.Body)
 
 	if er!= nil{
-		response.message = "Internal Server Error"
+		response.Message = "Internal Server Error"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
 
-	err:=json.Unmarshal(read,&input)
-	if err!= nil{
-		response.message = "Internal Server Error"
+	// if input.Name == "" || input.Price == 0 || input.Description == "" || input.Imageurl == "" || input.Number<1{
+	// 	response.Message = "Invalid input"
+	// 	w.Write(helper.MarshalResponse(response))
+	// 	return
+	// }
+	if itemHa.itemSrv.IsItemNameExist(input.Name){
+		response.Message = "This Item does't exist"
+		w.Write(helper.MarshalResponse(response))
+		return
+	}
+	if err:=json.Unmarshal(read,&input); err!= nil{
+		response.Message = "Internal Server Error"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
 
 	itm := entity.Item{
-		Name: input.name,
-		Price: input.price,
-		Description: input.description,
-		Image: input.imageurl,
+		Name: input.Name,
+		Price: input.Price,
+		Description: input.Description,
+		Image: input.Imageurl,
+		Number: input.Number,
 	}
 	itm.ID = uint(id)
 	itemUpdate,ers:=itemHa.itemSrv.UpdateItem(itm)
@@ -203,8 +236,8 @@ func (itemHa *ItemHandler)UpdateItem(w http.ResponseWriter,r *http.Request){
 		log.Fatal(ers)
 	}
 
-	response.message = "successfully updated"
-	response.item = itemUpdate
+	response.Message = "successfully updated"
+	response.Item = itemUpdate
 	w.Write(helper.MarshalResponse(response))
 }
 
@@ -212,62 +245,78 @@ func(itemHa *ItemHandler) AddIngredient(w http.ResponseWriter, r *http.Request){
 	w.Header().Set("Content-Type","application/json")
 	session := itemHa.session.GetSession(r)
 	response := &struct{
-		message string
-		ingrd *entity.Ingredient
+		Message string
+		Ingrd *entity.Ingredient
 	}{
-		message: "UnAuthorized user",
+		Message: "UnAuthorized user",
 	}
-
-	if session == nil || session.Role!="Admin"{
+	input := &struct{
+		Item_id int `json:"item_id"`
+		Ingredient_id int `json:"ingredient_id"` 
+	}{}
+ 	if session == nil || session.Role!="Admin"{
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
 
-	igrdId,e := strconv.Atoi(r.FormValue("ingredient_id"))
-	if e != nil{
+	// igrdId,e := strconv.Atoi(r.FormValue("ingredient_id"))
+	// if e != nil{
+	// 	w.Write(helper.MarshalResponse(response))
+	// 	return
+	// }
+	// itemId,e := strconv.Atoi(r.FormValue("item_id"))
+
+	// if e != nil{
+	// 	w.Write(helper.MarshalResponse(response))
+	// 	return
+	// }
+	read,ers := ioutil.ReadAll(r.Body)
+	if ers != nil {
+		response.Message  = "Internal server Error"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
-	itemId,e := strconv.Atoi(r.FormValue("item_id"))
-
-	if e != nil{
+	
+	if er := json.Unmarshal(read,&input);er!=nil {
+		response.Message  = "Internal server Error"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
-	item,ers := itemHa.itemSrv.Item(uint(itemId))
-	if item == nil || len(ers)>0{
-		response.message  = "No such Item"
-		w.Write(helper.MarshalResponse(response))
-		return
 
-	}
-	igrd,ers := itemHa.ingrd.Ingredient(uint(igrdId))
-
-	if igrd == nil || len(ers)>0{
-		response.message  = "No such ingredient"
+	item,er := itemHa.itemSrv.Item(uint(input.Item_id))
+	if item == nil || len(er)>0{
+		response.Message  = "No such Item"
 		w.Write(helper.MarshalResponse(response))
 		return
 
 	}
+	igrd,e := itemHa.ingrd.Ingredient(uint(input.Ingredient_id))
 
-	for _,id:= range item.Ingridients{
-		if id == string(igrd.ID) {
-			response.message  = "this ingredient is already added"
+	if igrd == nil || len(e)>0{
+		response.Message  = "No such ingredient"
+		w.Write(helper.MarshalResponse(response))
+		return
+
+	}
+
+	for _,ig:= range item.Ingridients{
+		if ig.ID == igrd.ID {
+			response.Message  = "this ingredient is already added"
 			w.Write(helper.MarshalResponse(response))
 			return
 		}
 	}
 
-	item.Ingridients = append(item.Ingridients, string(igrd.ID))
-	item,ers = itemHa.itemSrv.UpdateItem(*item)
-	if item == nil || len(ers)>0{
-		response.message  = "Internal server Error"
+	item.Ingridients = append(item.Ingridients, *igrd)
+	item,er = itemHa.itemSrv.UpdateItem(*item)
+	if item == nil || len(er)>0{
+		response.Message  = "Internal server Error"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
 
-	response.message = "Ingredient added successfully"
-	response.ingrd = igrd
+	response.Message = "Ingredient added successfully"
+	response.Ingrd = igrd
 	w.Write(helper.MarshalResponse(response))
 }
 
@@ -275,72 +324,80 @@ func(itemHa * ItemHandler)RemoveIngrediend(w http.ResponseWriter,r *http.Request
 	w.Header().Set("Content-Type","application/json")
 	session := itemHa.session.GetSession(r)
 	response := &struct{
-		message string
-		ingrd *entity.Ingredient
+		Message string
+		Ingrd *entity.Ingredient
 	}{
-		message: "UnAuthorized user",
+		Message: "UnAuthorized user",
 	}
-
+	input := &struct{
+		Ingredient_id int `json:"ingredient_id"`
+		Item_id int 	`json:"item_id"`
+	}{}
 	if session == nil || session.Role!="Admin"{
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
-	igrdId,e := strconv.Atoi(r.FormValue("ingredient_id"))
-	if e != nil{
-		w.Write(helper.MarshalResponse(response))
-		return
-	}
-	itemId,e := strconv.Atoi(r.FormValue("item_id"))
-
-	if e != nil{
-		w.Write(helper.MarshalResponse(response))
-		return
-	}
-	item,ers := itemHa.itemSrv.Item(uint(itemId))
-	if item == nil || len(ers)>0{
-		response.message  = "No such Item"
-		w.Write(helper.MarshalResponse(response))
-		return
-
-	}
-	igrd,ers := itemHa.ingrd.Ingredient(uint(igrdId))
-
-	if igrd == nil || len(ers)>0{
-		response.message  = "No such ingredient"
-		w.Write(helper.MarshalResponse(response))
-		return
-
-	}
-
-	for _,id:= range item.Ingridients{
-		if id == string(igrd.ID) {
-			response.message  = "this ingredient is already added"
+	read,_ := ioutil.ReadAll(r.Body)
+	if er:=json.Unmarshal(read,&input); er!=nil{
+		response.Message  = "Internal server Error"
 			w.Write(helper.MarshalResponse(response))
 			return
-		}
 	}
 
-	item.Ingridients = append(item.Ingridients, string(igrd.ID))
-	item,ers = itemHa.itemSrv.UpdateItem(*item)
+	item,ers := itemHa.itemSrv.Item(uint(input.Item_id))
 	if item == nil || len(ers)>0{
-		response.message  = "Internal server Error"
+		response.Message  = "No such Item"
 		w.Write(helper.MarshalResponse(response))
 		return
 
 	}
+	igrd,ers := itemHa.ingrd.Ingredient(uint(input.Ingredient_id))
 
-	response.message = "Ingredient added successfully"
-	response.ingrd = igrd
+	if igrd == nil || len(ers)>0{
+		response.Message  = "No such ingredient"
+		w.Write(helper.MarshalResponse(response))
+		return
+
+	}
+	check:= false
+	var ingrds[]entity.Ingredient
+	for _,ig:= range item.Ingridients{
+		if ig.ID != uint(input.Ingredient_id) {
+			fmt.Println(ig.ID)
+			ingrds = append(ingrds, ig)
+			
+		}else{
+			check = true
+		}
+	}
+	if check{
+		copy(item.Ingridients , ingrds)
+		item,ers = itemHa.itemSrv.UpdateItem(*item)
+		if item == nil || len(ers)>0{
+			response.Message  = "Internal server Error"
+			w.Write(helper.MarshalResponse(response))
+			return
+
+		}
+
+		response.Message = "Ingredient deleted successfully"
+		response.Ingrd = igrd
+		w.Write(helper.MarshalResponse(ingrds))
+	}
+	
+
+	response.Message = "No such Ingredient "
+	response.Ingrd = igrd
 	w.Write(helper.MarshalResponse(response))
 }
 
 func (itemHa *ItemHandler)GetMyIngregients(w http.ResponseWriter,r *http.Request){
 	w.Header().Set("Content-Type","application/json")
 	response := &struct{
-		message string
-		igrds []entity.Ingredient
+		Message string
+		Igrds []entity.Ingredient
 	}{
-		message: "Unauthorized user",
+		Message: "Unauthorized user",
 	}
 	session := itemHa.session.GetSession(r)
 	if session == nil{
@@ -351,30 +408,29 @@ func (itemHa *ItemHandler)GetMyIngregients(w http.ResponseWriter,r *http.Request
 	ids,e:= strconv.Atoi(id)
 
 	if e!=nil{
-		response.message = "The given Id is not Integer."
+		response.Message = "The given Id is not Integer."
 		w.Write(helper.MarshalResponse(response))
 
 	}
 
 	item,err:= itemHa.itemSrv.Item(uint(ids))
 	if err!=nil || item == nil{
-		response.message = "No such Item"
+		response.Message = "No such Item"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
-	for _,id := range item.Ingridients{
-		idIgrd,_ := strconv.Atoi(id)
-		igrd,err := itemHa.ingrd.Ingredient(uint(idIgrd))
+	for _,ig := range item.Ingridients{
+		igrd,err := itemHa.ingrd.Ingredient(ig.ID)
 
 		if err!=nil || igrd == nil{
-			response.message = "No such Ingredient"
+			response.Message = "No such Ingredient"
 			w.Write(helper.MarshalResponse(response))
 			return
 		}
-		response.igrds = append(response.igrds, *igrd)
+		response.Igrds = append(response.Igrds, *igrd)
 	}
 
-	response.message = "successfully retrieved Ingredients"
+	response.Message = "successfully retrieved Ingredients"
 	w.Write(helper.MarshalResponse(response))
 }
 
@@ -399,15 +455,14 @@ func (itemHa *ItemHandler)DeleteItem(w http.ResponseWriter,r *http.Request){
 		log.Fatal(err)
 	}
 
-	for _,id := range item.Catagories{
-		idCat,_ := strconv.Atoi(id)
-		cat,ers := itemHa.catsrv.Catagory(uint(idCat))
+	for _,ca := range item.Catagories{
+		cat,ers := itemHa.catsrv.Catagory(ca.ID)
 		if ers!=nil{
 			return
 		}
 
 		for _,c := range cat.Items{
-			if c != string(item.ID){
+			if c.ID != item.ID{
 				cat.Items = append(cat.Items, c)
 			}
 		}

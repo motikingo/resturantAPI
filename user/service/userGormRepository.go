@@ -63,9 +63,8 @@ func(usersrv *UserGormService)DeleteUser(id uint)(*entity.User,[]error){
 	}
 	return user,nil
 }
-func(usersrv *UserGormService)CreateUser(user *entity.User)(*entity.User,[]error){
+func(usersrv *UserGormService)CreateUser(user entity.User)(*entity.User,[]error){
 
-	usr := user
 	usr,err:= usersrv.repo.CreateUser(user)
 	if len(err)>0{
 		return nil,err

@@ -3,7 +3,7 @@ package handler
 import (
 	"net/http"
 	"time"
-
+	//"fmt"
 	"github.com/golang-jwt/jwt/v4"
 
 	"github.com/motikingo/resturant-api/entity"
@@ -57,12 +57,13 @@ func (sessionHand *SessionHandler)CreateSession (session *entity.Session,w http.
 func (sessionHand *SessionHandler) GetSession (r *http.Request) *entity.Session{
 
 	cookie,err := r.Cookie(entity.SessionName)
-	var session entity.Session
+	session := &entity.Session{}
 	if err != nil{
 		return nil
 	}
 
 	tknstr := cookie.Value
+	//fmt.Println(tknstr)
 	tkn,err := jwt.ParseWithClaims(tknstr,session,func(t *jwt.Token) (interface{}, error) {
 		return key,nil
 	})
@@ -75,7 +76,7 @@ func (sessionHand *SessionHandler) GetSession (r *http.Request) *entity.Session{
 
 	}
 
-	return &session
+	return session
 
 
 }
@@ -83,7 +84,7 @@ func (sessionHand *SessionHandler) GetSession (r *http.Request) *entity.Session{
 func (sessionHand *SessionHandler) DeleteSession(w http.ResponseWriter)error{
 	var session entity.Session
 	
-	expireTime := time.Now().Add(24 * time.Hour)
+	expireTime := time.Now().Add(-24 * time.Hour)
 	session.RegisteredClaims = jwt.RegisteredClaims{
 		ExpiresAt: &jwt.NumericDate{Time:expireTime},
 	}

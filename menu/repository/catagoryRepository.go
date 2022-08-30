@@ -57,7 +57,7 @@ func(cat *CatagoryGormRepository)UpdateCatagory(cata entity.Catagory)(*entity.Ca
 		return catagory.Name
 	}()
 
-	catagory.Items = func () []string  {
+	catagory.Items = func () []entity.Item  {
 		if len(cata.Items) != len(catagory.Items) {
 			return cata.Items
 		}

@@ -34,8 +34,8 @@ type Item struct{
 	Description string 	 	`json:"description" gorm:type:"varchar(255);not null"`	
 	Image string 			`json:"image" gorm:"type:varchar(255);not null"`	
 	Number int 				`json:"number" gorm:"type:varchar(255);not null"`
-	Catagories []string 	`json:"catagories" gorm:"type:varchar(255);not null"`
-	Ingridients []string 	`json:"ingridients" gorm:"type:varchar(255);not null"`
+	Catagories []Catagory 	`json:"catagories" gorm:"many2many:catagory_items;"`
+	Ingridients []Ingredient `json:"ingridients" gorm:"many2many:item_ingredients;"`
 
 }
 
@@ -53,7 +53,7 @@ type Catagory struct{
 	gorm.Model
 	Name string		 `json:"name" "gorm:type:varchar(255);not null"`
 	ImageUrl string  `json:"image" "gorm:type:varchar(255);not null"`
-	Items []string 	 `json:"items" gorm:"type:varchar(255);"`
+	Items []Item 	 `json:"items"gorm:"many2many:catagory_items;"`
 
 }
 
@@ -61,7 +61,7 @@ type Ingredient struct{
 	gorm.Model
 	Name string 		`json:"name" gorm:"type:varchar(255);not null"`
 	Description string `json:"description" gorm:"type:varchar(255);not null"`
-
+	Items []Item 		`json:"Items" gorm:"many2many:item_ingredients;"`
 }
 
 // type Role struct{

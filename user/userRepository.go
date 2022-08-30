@@ -11,5 +11,5 @@ type UserRepo interface{
 	GetUserByEmailAndID( id uint ,email string)*entity.User
 	UpdateUser(user entity.User)(*entity.User,[]error)
 	DeleteUser(id uint)(*entity.User,[]error)
-	CreateUser(user *entity.User)(*entity.User,[]error)
+	CreateUser(user entity.User)(*entity.User,[]error)
 }

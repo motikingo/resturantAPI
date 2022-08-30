@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -24,18 +25,18 @@ func NewAdminHandler(usersrv user.UserService,session *SessionHandler) *AdminHan
 
 func(adminHan *AdminHandler)CreateAdmin(w http.ResponseWriter,r *http.Request){
 	w.Header().Set("Content-Type","application/json")
-	
+	fmt.Println("Admin")
 	if r.Method == "POST"{
 		response := &struct{
-			status string
-			admin *entity.User
+			Status string
+			Admin *entity.User
 		}{
-			status: "Invalid Input",
+			Status: "Invalid Input",
 		}
-		input:=&struct{
-			email string
-			password string
-			confirm_password string
+		Input:=&struct{
+			Email string `json:"email"`
+			Password string `json:"password"`
+			Confirm_password string `json:"confirm_password"`
 		}{}
 		
 		read,e:=ioutil.ReadAll(r.Body)
@@ -44,52 +45,52 @@ func(adminHan *AdminHandler)CreateAdmin(w http.ResponseWriter,r *http.Request){
 			log.Fatal(err)
 		}
 		
-		er:= json.Unmarshal(read,&input)
+		er:= json.Unmarshal(read,&Input)
 
-		if er != nil || input.email == "" || input.password == "" || input.confirm_password==""{
+		if er != nil || Input.Email == "" || Input.Password == "" || Input.Confirm_password==""{
 			w.Write(helper.MarshalResponse(response))
 			return
 		}
 
-		if len(input.password)<8 {
-			response.status = "password lenght must be more than 8 character"
+		if len(Input.Password)<8 {
+			response.Status = "password lenght must be more than 8 character"
 			w.Write(helper.MarshalResponse(response))
 			return
 		}
-		if input.password != input.confirm_password {
-			response.status = "confirm password is not the same"
+		if Input.Password != Input.Confirm_password {
+			response.Status = "confirm password is not the same"
 			w.Write(helper.MarshalResponse(response))
 			return			
 		}
 
-		if adminHan.usersrv.GetUserByEmail(input.email) != nil {
-			response.status ="this Email is already exist"
+		if adminHan.usersrv.GetUserByEmail(Input.Email) != nil {
+			response.Status ="this Email is already exist"
 			w.Write(helper.MarshalResponse(response))
 			return
 			
 		}
 		
-		input.password = helper.HashPassword(input.password)
-		if input.password == ""{
-			response.status ="Internal server error"
+		Input.Password = helper.HashPassword(Input.Password)
+		if Input.Password == ""{
+			response.Status ="Internal server error"
 			w.Write(helper.MarshalResponse(response))
 			return
 		}
 
 		admin := &entity.User{
-			Email:input.email,
-			Password:input.password,
+			Email:Input.Email,
+			Password:Input.Password,
 			Role:"Admin",
 			}		
 		
-		adm,err:=adminHan.usersrv.CreateUser(admin)
+		adm,err:=adminHan.usersrv.CreateUser(*admin)
 		if err!=nil|| adm == nil{
-			response.status ="Internal server error"
+			response.Status ="Internal server error"
 			w.Write(helper.MarshalResponse(response))
 			return
 		}
-		response.status = "successfully created"
-		response.admin = adm
+		response.Status = "successfully created"
+		response.Admin = adm
 		w.Write(helper.MarshalResponse(response))
 			
 	}
@@ -156,72 +157,73 @@ func(adminHan *AdminHandler)ChangeAdminPassword(w http.ResponseWriter,r *http.Re
 func(adminHan *AdminHandler)Login(w http.ResponseWriter,r *http.Request){
 
 	response := &struct{
-		status string
-		adminId uint
+		Status string
+		AdminId uint
 	}{
-		status: "login faild",
+		Status: "login faild",
 	}
 	input :=&struct{
-		email string
-		password string
+		Email string
+		Password string
 	}{}
+	fmt.Println("here")
+	read,_:= ioutil.ReadAll(r.Body)
 
-	read,er:= ioutil.ReadAll(r.Body)
-	er = json.Unmarshal(read,&input)
-	if er != nil{
+	if er := json.Unmarshal(read,&input);er != nil{
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
 
-	if len(input.password)<4 || input.password ==""{
-		response.status= "invalid password input "
+	if len(input.Password)<4 || input.Password ==""{
+		response.Status= "invalid password input "
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
-	if input.email == ""{
-		response.status= "invalud input email"
+	if input.Email == ""{
+		response.Status= "invalud input email"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
 
-	admin := adminHan.usersrv.GetUserByEmail(input.email)
+	admin := adminHan.usersrv.GetUserByEmail(input.Email)
 	if admin == nil{
-		response.status = "this email is not registered"
+		response.Status = "this email is not registered"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
-	if !helper.MatchPassword(admin.Password,input.password) {
-		response.status = "Incorrect password"
+	if !helper.MatchPassword(admin.Password,input.Password) {
+		response.Status = "Incorrect password"
 		w.Write(helper.MarshalResponse(response))
 		return
 		
 	}
+	
 	sess := &entity.Session{
-		UserID: string(admin.ID),
+		UserID:strconv.Itoa(int(admin.ID)),
 		Email: admin.Email,	
 		Role:"Admin",	
 	}
 
 	if !adminHan.session.CreateSession(sess,w){
-		response.status = "Internal server Error"
+		response.Status = "Internal server Error"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
 
-	response.status = "Login successful"
-	response.adminId = admin.ID
+	response.Status = "Login successful"
+	response.AdminId = admin.ID
 	w.Write(helper.MarshalResponse(response))
 }
 
 func(adminHan *AdminHandler)Logout(w http.ResponseWriter,r *http.Request){
 	sess := adminHan.session.GetSession(r)
 	response := &struct{
-		success bool
-		message string
-		adminId string
+		Success bool
+		Message string
+		AdminId string
 	}{
-		success: false,
-		message: "UnAuthorized User...",
+		Success: false,
+		Message: "UnAuthorized User...",
 	}
 	if sess == nil || sess.Role == "Admin"{
 		w.Write(helper.MarshalResponse(response))
@@ -229,14 +231,14 @@ func(adminHan *AdminHandler)Logout(w http.ResponseWriter,r *http.Request){
 	}
 	
 	if adminHan.session.DeleteSession(w)!= nil{
-		response.message = "Internal server Error"
+		response.Message = "Internal server Error"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
 
-	response.message = "Logout successful"
-	response.success = true
-	response.adminId = sess.UserID
+	response.Message = "Logout successful"
+	response.Success = true
+	response.AdminId = sess.UserID
 	w.Write(helper.MarshalResponse(response))
 
 }
@@ -274,7 +276,7 @@ func(adminHan *AdminHandler)DeleteAdmin(w http.ResponseWriter,r *http.Request){
 		return
 	}
 	respose.message = "Admin Account Delete successful"
-	respose.AdminId = uint(id)
+	respose.AdminId = admin.ID
 		
 	w.Write(helper.MarshalResponse(respose))
 }

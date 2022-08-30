@@ -19,7 +19,7 @@ func NewIngredientGormRepository(db *gorm.DB)menu.IngredientRepo{
 func(ingrd *IngredientGormRepository) Ingredients()([]entity.Ingredient,[]error){
 
 	ingredients := []entity.Ingredient{}
-	err:= ingrd.db.Find(&ingredients).GetErrors()
+	err:= ingrd.db.Model(entity.Ingredient{}).Preload("Items").Find(&ingredients).GetErrors()
 	if len(err)>0{
 		return nil,err
 	}
@@ -29,7 +29,7 @@ func(ingrd *IngredientGormRepository) Ingredients()([]entity.Ingredient,[]error)
 func(ingrd *IngredientGormRepository) Ingredient(id uint)(*entity.Ingredient,[]error){
 
 	var ingredient entity.Ingredient
-	err:= ingrd.db.First(&ingredient,id).GetErrors()
+	err:= ingrd.db.Preload("Items").First(&ingredient,id).GetErrors()
 	if len(err)>0{
 		return nil,err
 	}

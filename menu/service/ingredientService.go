@@ -9,7 +9,7 @@ type IngredientGormService struct{
 	repo menu.IngredientRepo
 }
 
-func NewIngredientGormRepository(repo menu.IngredientRepo)menu.IngredientService{
+func NewIngredientGormService(repo menu.IngredientRepo)menu.IngredientService{
 	return &IngredientGormService{repo:repo}
 }
 

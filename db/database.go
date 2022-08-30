@@ -35,7 +35,6 @@ func Connect() *gorm.DB{
 		fmt.Println("opening db error")
 		return nil
 	}
-	defer db.Close()
 	
 	return db
 }

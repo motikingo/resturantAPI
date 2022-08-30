@@ -22,7 +22,6 @@ import (
 	"github.com/motikingo/resturant-api/comment"
 )
 var err error
-var errs []error
 var comm entity.Comment
 type CommentHandler struct{
 	comSrv comment.CommentService
@@ -37,10 +36,10 @@ func(comHandler *CommentHandler)GetComments(w http.ResponseWriter, r *http.Reque
 	w.Header().Set("Content-Type","application/json")
 	session := comHandler.session.GetSession(r)
 	response := &struct{
-		status string
-		comments []entity.Comment
+		Status string
+		Comments []entity.Comment
 	}{
-		status: "Unauthorized user",
+		Status: "Unauthorized user",
 	}
 	if session == nil{
 		w.Write(helper.MarshalResponse(response))
@@ -49,11 +48,11 @@ func(comHandler *CommentHandler)GetComments(w http.ResponseWriter, r *http.Reque
 
 	comments,err := comHandler.comSrv.Comments()
 	if len(err)>0 || len(comments )>0{
-		response.status = "No comment found"
+		response.Status = "No comment found"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
-	response.status = "successfully retrieved comment" 
+	response.Status = "successfully retrieved comment" 
 	w.Write(helper.MarshalResponse(response))
 }
 
@@ -61,10 +60,10 @@ func(comHandler *CommentHandler)GetComment(w http.ResponseWriter, r *http.Reques
 	w.Header().Set("Content-Type","application/json")
 	session := comHandler.session.GetSession(r)
 	response := &struct{
-		status string
-		comment *entity.Comment
+		Status string
+		Comment *entity.Comment
 	}{
-		status: "Unauthorized user",
+		Status: "Unauthorized user",
 	}
 	if session == nil{
 		w.Write(helper.MarshalResponse(response))
@@ -76,7 +75,7 @@ func(comHandler *CommentHandler)GetComment(w http.ResponseWriter, r *http.Reques
 
 	comment,err := comHandler.comSrv.Comment(uint(ids))
 	if err!=nil {
-		response.status = "No such comment"
+		response.Status = "No such comment"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
@@ -87,13 +86,13 @@ func(comHandler *CommentHandler)GetComment(w http.ResponseWriter, r *http.Reques
 func(comHandler *CommentHandler)CreateComment(w http.ResponseWriter, r *http.Request){
 	w.Header().Set("Content-Type","application/json")
 	response := &struct{
-		status string
-		comment *entity.Comment
+		Status string
+		Comment *entity.Comment
 	}{
-		status: "Unauthorized user",
+		Status: "Unauthorized user",
 	}
 	input := &struct{
-		description string
+		Description string
 	}{}
 	session := comHandler.session.GetSession(r)
 	if session == nil{
@@ -108,8 +107,8 @@ func(comHandler *CommentHandler)CreateComment(w http.ResponseWriter, r *http.Req
 	}
 
 	er = json.Unmarshal(read,&input)
-	if er!=nil || input.description == ""{
-		response.status = "Invalid Input"
+	if er!=nil || input.Description == ""{
+		response.Status = "Invalid Input"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
@@ -117,7 +116,7 @@ func(comHandler *CommentHandler)CreateComment(w http.ResponseWriter, r *http.Req
 	com,ers :=comHandler.comSrv.CreateComment(&comm)
 
 	if ers!=nil {
-		response.status = "Internal server Error"
+		response.Status = "Internal server Error"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
@@ -129,17 +128,17 @@ func(comHandler *CommentHandler)UpdateComment(w http.ResponseWriter, r *http.Req
 	w.Header().Set("Content-Type","application/json")
 	session := comHandler.session.GetSession(r)
 	response := &struct{
-		status string
-		comment entity.Comment
+		Status string
+		Comment entity.Comment
 	}{
-		status: "UnAuthorized user",
+		Status: "UnAuthorized user",
 	}
 	if session == nil{
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
 	input := &struct{
-		description string
+		Description string
 	}{}
 	var comm entity.Comment
 	id:= mux.Vars(r)["id"] 
@@ -148,19 +147,19 @@ func(comHandler *CommentHandler)UpdateComment(w http.ResponseWriter, r *http.Req
 	read,e:= ioutil.ReadAll(r.Body)
 
 	if e!= nil{
-		response.status = "Internal Server Error"
+		response.Status = "Internal Server Error"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
 	err = json.Unmarshal(read,&input)
 	if err != nil {
-		response.status = "Internal Server Error"
+		response.Status = "Internal Server Error"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
 
-	if input.description == "" {
-		response.status = "Nothing added"
+	if input.Description == "" {
+		response.Status = "Nothing added"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}

@@ -36,7 +36,8 @@ func(userRepo *UserGormRepository)GetUserByID(id uint)(*entity.User,[]error){
 
 func(userRepo *UserGormRepository)GetUserByEmail(email string)*entity.User{
 	var user entity.User
-	err := userRepo.db.First(&user,email).GetErrors()
+	//err := userRepo.db.First(&user,email).GetErrors()
+	err := userRepo.db.Where("email = ?",email).First(&user).GetErrors()
 	if len(err)>0{
 		return nil
 	}
@@ -105,13 +106,11 @@ func(userRepo *UserGormRepository)DeleteUser(id uint)(*entity.User,[]error){
 	}
 	return user,nil
 }
-func(userRepo *UserGormRepository)CreateUser(user *entity.User)(*entity.User,[]error){
-
-	usr := user
-	err:= userRepo.db.Create(&usr).GetErrors()
+func(userRepo *UserGormRepository)CreateUser(user entity.User)(*entity.User,[]error){
+	err:= userRepo.db.Create(&user).GetErrors()
 	if len(err)>0{
 		return nil,err
 	}
-	return usr,nil
+	return &user,nil
 }
 

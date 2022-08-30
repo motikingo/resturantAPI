@@ -76,14 +76,14 @@ func(odrHan *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request){
 	w.Header().Set("Content-Type","application/json")
 	sess := odrHan.session.GetSession(r)
 	response := &struct{
-		status string
-		order * entity.Order
+		Status string
+		Order * entity.Order
 	}{
-		status: "order create faild",
+		Status: "order create faild",
 	}
 	input := &struct{
-		itemId string
-		number int
+		ItemId string
+		Number int
 	}{}
 	if sess == nil{
 		w.Write(helper.MarshalResponse(response))
@@ -96,28 +96,28 @@ func(odrHan *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request){
 		return
 	}
 	e:=json.Unmarshal(read,&input)
-	if e!=nil|| input.itemId == "" || input.number < 1 {
+	if e!=nil|| input.ItemId == "" || input.Number < 1 {
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
-	itemId,_ := strconv.Atoi(input.itemId)
+	itemId,_ := strconv.Atoi(input.ItemId)
 	userId,_ := strconv.Atoi(sess.UserID)
 	item,ers := odrHan.itemsrv.Item(uint(itemId))
 	if len(ers)>0{
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
-	if item.Number < input.number{
-		response.status = "Sorry we don't have enought item come back latter"
+	if item.Number < input.Number{
+		response.Status = "Sorry we don't have enought item come back latter"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
-	bill := item.Price * float64(input.number)
+	bill := item.Price * float64(input.Number)
 	order := entity.Order{
 		PlaceAt: time.Now(),
 		ItemID: uint(itemId),
 		UserID: uint(userId),
-		Number : input.number,
+		Number : input.Number,
 		Orderbill:bill,
 
 	}
@@ -132,12 +132,12 @@ func(odrHan *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request){
 
 	item,ers = odrHan.itemsrv.UpdateItem(*item)
 	if er!=nil{
-		response.status = "Internal Server Error"
+		response.Status = "Internal Server Error"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
-	response.status = "successfully ordered"
-	response.order = ord 
+	response.Status = "successfully ordered"
+	response.Order = ord 
 
 	w.Write(helper.MarshalResponse(response))
 }
@@ -147,13 +147,13 @@ func(odrHan *OrderHandler) UpdateOrder(w http.ResponseWriter, r *http.Request){
 	sess := odrHan.session.GetSession(r)
 	
 	response := &struct{
-		status string
-		order * entity.Order
+		Status string
+		Order * entity.Order
 	}{
-		status: "order update faild",
+		Status: "order update faild",
 	}
 	input := &struct{
-		count int
+		Count int
 	}{}
 
 	if sess==nil {
@@ -176,30 +176,30 @@ func(odrHan *OrderHandler) UpdateOrder(w http.ResponseWriter, r *http.Request){
 	}
 	er = json.Unmarshal(read,&input) 
 
-	if er!=nil || input.count < 1{
+	if er!=nil || input.Count < 1{
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
 
-	if odr.Number == input.count{
-		response.status = "Nothing change"
+	if odr.Number == input.Count{
+		response.Status = "Nothing change"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
 	odr = &entity.Order{
 		PlaceAt: time.Now(),
-		Number: input.count,
+		Number: input.Count,
 	}
 	odr.ID = uint(id)
 	ordernew,errs:=odrHan.odrSrv.UpdateOrder(*odr)
 
 	if len(errs)>0{
-		response.status = "Internal Server Error"
+		response.Status = "Internal Server Error"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
-	response.status = "Successfully updated"
-	response.order = ordernew
+	response.Status = "Successfully updated"
+	response.Order = ordernew
 	w.Write(helper.MarshalResponse(response))
 }
 
@@ -207,10 +207,10 @@ func(odrHan *OrderHandler) DeleteOrder(w http.ResponseWriter, r *http.Request){
 	w.Header().Set("Content-Type","application/json")
 	sess := odrHan.session.GetSession(r)
 	response := &struct{
-		status string
-		orderId uint
+		Status string
+		OrderId uint
 	}{
-		status: "Delete order faild",
+		Status: "Delete order faild",
 	}
 	if sess == nil{
 		w.Write(helper.MarshalResponse(response))
@@ -220,7 +220,7 @@ func(odrHan *OrderHandler) DeleteOrder(w http.ResponseWriter, r *http.Request){
 	ids,_:=strconv.Atoi(id)
 	ord,err:= odrHan.odrSrv.Order(uint(ids))
 	if ord==nil || len(err)>0{
-		response.status = "No such order"
+		response.Status = "No such order"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}

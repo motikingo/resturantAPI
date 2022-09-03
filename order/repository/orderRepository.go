@@ -6,80 +6,83 @@ import (
 	Order "github.com/motikingo/resturant-api/order"
 )
 
-
-type OrderGormRespository struct{
+type OrderGormRespository struct {
 	db *gorm.DB
 }
 
-func NewOrderGormRespository(db *gorm.DB) Order.OrderRespository{
+func NewOrderGormRespository(db *gorm.DB) Order.OrderRespository {
 	return &OrderGormRespository{db: db}
 }
 
-func(odRepo *OrderGormRespository) Orders()([]entity.Order,[]error){
-	orders:= []entity.Order{}
-	err:= odRepo.db.Find(&orders).GetErrors()
-	if len(err)>0{
-		return nil,err
+func (odRepo *OrderGormRespository) Orders() ([]entity.Order, []error) {
+	orders := []entity.Order{}
+	err := odRepo.db.Find(&orders).GetErrors()
+	if len(err) > 0 {
+		return nil, err
 	}
-	return orders,nil
+	return orders, nil
 
 }
 
-func(odRepo *OrderGormRespository)Order(id uint)(*entity.Order,[]error){
+func (odRepo *OrderGormRespository) Order(id uint) (*entity.Order, []error) {
 	var order entity.Order
-	err:= odRepo.db.First(&order,id).GetErrors()
-	if len(err)>0{
-		return nil,err
+	err := odRepo.db.First(&order, id).GetErrors()
+	if len(err) > 0 {
+		return nil, err
 	}
-	return &order,nil
+	return &order, nil
 }
 
-func(odRepo *OrderGormRespository)UpdateOrder(ord entity.Order)(*entity.Order,[]error){
+func (odRepo *OrderGormRespository) UpdateOrder(ord entity.Order) (*entity.Order, []error) {
 
-	order,err:=odRepo.Order(ord.ID)
-	if len(err)>0{
-		return nil,err
+	order, err := odRepo.Order(ord.ID)
+	if len(err) > 0 {
+		return nil, err
 	}
-	order.ItemID = ord.ItemID
-	order.CatagoryID = ord.CatagoryID
-	order.UserID = ord.UserID
+	order.Number = func() int {
+		if order.Number != ord.Number {
+			order.Orderbill = ord.Orderbill
+			return ord.Number
+		}
+		return ord.Number
+	}()
 
 	err = odRepo.db.Save(&order).GetErrors()
-	if len(err)>0{
-		return nil,err
+	if len(err) > 0 {
+		return nil, err
 	}
-	return order,nil
+	return order, nil
 }
 
-func(odRepo *OrderGormRespository)DeleteOrder(id uint)(*entity.Order,[]error){
-	orders,err:=odRepo.Order(id)
-	if len(err)>0{
-		return nil,err
+func (odRepo *OrderGormRespository) DeleteOrder(id uint) (*entity.Order, []error) {
+	orders, err := odRepo.Order(id)
+	if len(err) > 0 {
+		return nil, err
 	}
-	err = odRepo.db.Delete(&orders,id).GetErrors()
-	if len(err)>0{
-		return nil,err
+	err = odRepo.db.Delete(&orders, id).GetErrors()
+	if len(err) > 0 {
+		return nil, err
 	}
-	return orders,nil
-	
+	return orders, nil
+
 }
 
-func(odRepo *OrderGormRespository)CreateOrder(order entity.Order)(*entity.Order,[]error){
+func (odRepo *OrderGormRespository) CreateOrder(order entity.Order) (*entity.Order, []error) {
 
-	ord := order 
+	ord := order
 	err := odRepo.db.Create(&ord).GetErrors()
-	if len(err)>0{
-		return nil,err
+	if len(err) > 0 {
+		return nil, err
 	}
-	return &ord,nil
+	return &ord, nil
 }
 
-func(odRepo *OrderGormRespository)CustomerOrders(customer entity.User) ([]entity.Order,[]error){
+func (odRepo *OrderGormRespository) CustomerOrders(customer entity.User) ([]entity.Order, []error) {
 
 	orders := []entity.Order{}
-	err := odRepo.db.Model(customer).Related(&orders,"Orders").GetErrors()
-	if len(err)>0{
-		return nil,err
+	err := odRepo.db.Model(customer).Related(&orders, "Orders").GetErrors()
+	if len(err) > 0 {
+		return nil, err
 	}
-	return orders,nil
+	return orders, nil
 }

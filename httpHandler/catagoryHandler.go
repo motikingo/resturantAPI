@@ -25,62 +25,62 @@ import (
 // 	tmpl = template.Must(template.ParseGlob("../template/menu/*.html"))
 // }
 
-type CatagoryHandler struct{
+type CatagoryHandler struct {
 	catSrv  menu.CatagorySrv
 	session *SessionHandler
 	itemSrv menu.ItemService
 }
 
-func NewCatagoryHandler(catSrv menu.CatagorySrv,session *SessionHandler)CatagoryHandler{
-	return CatagoryHandler{catSrv: catSrv,session:session}
+func NewCatagoryHandler(catSrv menu.CatagorySrv, session *SessionHandler, itemSrv menu.ItemService) CatagoryHandler {
+	return CatagoryHandler{catSrv: catSrv, session: session, itemSrv: itemSrv}
 }
 
-func(catHandler *CatagoryHandler) GetCatagories(w http.ResponseWriter,r *http.Request,){
+func (catHandler *CatagoryHandler) GetCatagories(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("here")
-	w.Header().Set("Content-Type","application/json")
+	w.Header().Set("Content-Type", "application/json")
 	session := catHandler.session.GetSession(r)
 
 	fmt.Println("here")
-	if session == nil{
+	if session == nil {
 		w.Write([]byte("Unauthorized user"))
 		return
 	}
-	catagories,err:= catHandler.catSrv.Catagories()
-	
-	if len(err)>0{
+	catagories, err := catHandler.catSrv.Catagories()
+
+	if len(err) > 0 {
 		w.Write([]byte("Internal server error"))
 		return
 	}
-	
+
 	w.Write(helper.MarshalResponse(catagories))
 }
 
-func(catHandler *CatagoryHandler) GetCatagory(w http.ResponseWriter,r *http.Request){
+func (catHandler *CatagoryHandler) GetCatagory(w http.ResponseWriter, r *http.Request) {
 
-	w.Header().Set("Content-Type","application/json")
+	w.Header().Set("Content-Type", "application/json")
 	session := catHandler.session.GetSession(r)
-	if session == nil{
+	if session == nil {
 		w.Write([]byte("Unauthorized user"))
 		return
 	}
 	fmt.Println("here")
-	id:=mux.Vars(r)["id"]
-	
-	ids,err := strconv.Atoi(id)
+	id := mux.Vars(r)["id"]
+
+	ids, err := strconv.Atoi(id)
 	fmt.Println(ids)
-	if  err != nil {
+	if err != nil {
 		//fmt.Println(ids)
 		w.Write([]byte(err.Error()))
 		return
 	}
 
-	cat,er:= catHandler.catSrv.Catagory(uint(ids))
+	cat, er := catHandler.catSrv.Catagory(uint(ids))
 
-	if len(er)>0{
-		http.Error(w,http.StatusText(http.StatusNotFound),http.StatusNotFound)
+	if len(er) > 0 {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
-	
+
 	// catagories,err := json.MarshalIndent(cat,"","t/t/")
 
 	// if err != nil{
@@ -88,85 +88,91 @@ func(catHandler *CatagoryHandler) GetCatagory(w http.ResponseWriter,r *http.Requ
 	// 	return
 	// }
 
-	 w.Write(helper.MarshalResponse(cat))
+	w.Write(helper.MarshalResponse(cat))
 }
 
-func(catHandler *CatagoryHandler) CreateCatagory(w http.ResponseWriter,r *http.Request){
+func (catHandler *CatagoryHandler) CreateCatagory(w http.ResponseWriter, r *http.Request) {
 	var cat entity.Catagory
 	session := catHandler.session.GetSession(r)
-	if session == nil || session.Role != "Admin"{
+	if session == nil || session.Role != "Admin" {
 		w.Write([]byte("Unauthorized user"))
 		return
 	}
 
-	respose:=&struct{
+	respose := &struct {
 		Success bool
 		Message string
-		Cat *entity.Catagory
-
+		Cat     *entity.Catagory
 	}{
 		Success: false,
 		Message: "failed to create catagory",
 	}
-	input := &struct{
-		Name string 	`json:"name"`
-		Imageurl string	 `json:"imageurl"`
-		ItemId  []entity.Item  `json:"item_Id"`
-		}{}
-	read,err := ioutil.ReadAll(r.Body)
-	if err != nil{
+	input := &struct {
+		Name     string `json:"name"`
+		Imageurl string `json:"imageurl"`
+		ItemId   []int  `json:"item_Id"`
+	}{}
+	read, err := ioutil.ReadAll(r.Body)
+	if err != nil {
 		w.Write(helper.MarshalResponse(respose))
-		return 
+		return
 	}
-	err = json.Unmarshal(read,&input)
+	err = json.Unmarshal(read, &input)
 
-	if err != nil{
+	if err != nil {
 		w.Write(helper.MarshalResponse(respose))
 		log.Fatal(err)
 
 		return
 	}
 
-	if catHandler.catSrv.IsCatagoryNameExist(input.Name){
+	if catHandler.catSrv.IsCatagoryNameExist(input.Name) {
 		respose.Message = "catagory with this name already exist"
 		w.Write(helper.MarshalResponse(respose))
 		return
 
 	}
-	if input.Name == "" || input.Imageurl == "" || len(input.ItemId)<1 {
+	if input.Name == "" || input.Imageurl == "" || len(input.ItemId) < 1 {
 		respose.Message = "Invalid Input"
 		w.Write(helper.MarshalResponse(respose))
 		return
-		
+
 	}
 	cat.Name = input.Name
 	cat.ImageUrl = input.Imageurl
-	cat.Items = input.ItemId
-
-	newcat,errs:= catHandler.catSrv.CreateCatagory(cat)
-	if errs != nil{
+	for _, id := range input.ItemId {
+		item, ers := catHandler.itemSrv.Item(uint(id))
+		if len(ers) > 0 {
+			respose.Message = "Internal server error"
+			w.Write(helper.MarshalResponse(respose))
+			return
+		}
+		cat.Items = append(cat.Items, *item)
+	}
+	newcat, errs := catHandler.catSrv.CreateCatagory(cat)
+	if len(errs) > 0 {
 		respose.Message = "Internal server error"
 		w.Write(helper.MarshalResponse(respose))
 		return
 	}
 
-	for _,it := range cat.Items{
-		item,ers:= catHandler.itemSrv.Item(it.ID)
-		if len(ers)>0 || item == nil{
-			respose.Message = "Internal server error"
-			w.Write(helper.MarshalResponse(respose))
-			return
-		} 
-		// item.Catagories = append(item.Catagories, string(cat.ID))
-		// item,ers = catHandler.itemSrv.UpdateItem(*item)
-		// if len(ers)>0 || item == nil{
-		// 	respose.message = "Internal server error"
-		// 	w.Write(helper.MarshalResponse(respose))
-		// 	return
-		// }		
-	}
+	// for _, it := range cat.Items {
+	// 	item, ers := catHandler.itemSrv.Item(it.ID)
+	// 	if len(ers) > 0 || item == nil {
+	// 		respose.Message = "Internal server error"
+	// 		w.Write(helper.MarshalResponse(respose))
+	// 		return
+	// 	}
+	// item.Catagories = append(item.Catagories, string(cat.ID))
+	// item,ers = catHandler.itemSrv.UpdateItem(*item)
+	// if len(ers)>0 || item == nil{
+	// 	respose.message = "Internal server error"
+	// 	w.Write(helper.MarshalResponse(respose))
+	// 	return
+	// }
+	// }
 	//updated,_ = ioutil.ReadAll(updatedcat)
-	// c,_:=json.MarshalIndent(newcat,"","/t/t") 
+	// c,_:=json.MarshalIndent(newcat,"","/t/t")
 	// //err = json.NewDecoder().Decode(&cat)
 	// if err != nil{
 	// 	fmt.Println("not Unmarshal!")
@@ -181,265 +187,284 @@ func(catHandler *CatagoryHandler) CreateCatagory(w http.ResponseWriter,r *http.R
 
 }
 
-func(catHander *CatagoryHandler) UpdateCatagory(w http.ResponseWriter, r *http.Request){
+func (catHander *CatagoryHandler) UpdateCatagory(w http.ResponseWriter, r *http.Request) {
 	var cat entity.Catagory
-	w.Header().Set("Content-Type","application/json")
+	w.Header().Set("Content-Type", "application/json")
 	session := catHander.session.GetSession(r)
-	response := &struct{
-		Message string
+	response := &struct {
+		Message  string
 		Catagory *entity.Catagory
 	}{
 		Message: "Unauthorized user",
 	}
 
-	input := &struct{
-		Name string
+	input := &struct {
+		Name     string
 		Imageurl string
 	}{}
-	if session == nil || session.Role !="Admin"{
+	if session == nil || session.Role != "Admin" {
 		w.Write(helper.MarshalResponse(response))
 		return
 
 	}
 
-	id := r.FormValue("catagory_id")
-	ids,e:= strconv.Atoi(id)
-	if e!= nil{
+	id := mux.Vars(r)["id"]
+	ids, e := strconv.Atoi(id)
+	if e != nil {
 		log.Fatal(e)
 		return
 	}
-	read,err := ioutil.ReadAll(r.Body)
-	if err != nil{
+	read, err := ioutil.ReadAll(r.Body)
+	if err != nil {
 		response.Message = "Internal server Error"
 		w.Write(helper.MarshalResponse(response))
-		return 
+		return
 	}
 
-	err=json.Unmarshal(read,&input)
-	if err != nil{
+	if err := json.Unmarshal(read, &input); err != nil {
 		response.Message = "Internal server Error"
 		w.Write(helper.MarshalResponse(response))
 		log.Fatal(err)
 		return
 	}
 
-	if input.Name =="" || input.Imageurl == ""{
+	if input.Name == "" || input.Imageurl == "" {
 		response.Message = "Invalid input"
 		w.Write(helper.MarshalResponse(response))
 		return
-		
+
 	}
-	if catHander.catSrv.IsCatagoryNameExist(input.Name) {
-		response.Message = "catagory with this name already exist"
+	c, ers := catHander.catSrv.Catagory(uint(ids))
+	if len(ers) > 0 {
+		response.Message = "No such catagory"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
+	if c.Name != input.Name {
+		if catHander.catSrv.IsCatagoryNameExist(input.Name) {
+			response.Message = "catagory with this name already exist"
+			w.Write(helper.MarshalResponse(response))
+			return
+		}
+	}
+
 	cat = entity.Catagory{
-		Name: input.Name,
+		Name:     input.Name,
 		ImageUrl: input.Imageurl,
 	}
 	cat.ID = uint(ids)
 
-	catupdated,er:= catHander.catSrv.UpdateCatagory(cat)
-	
-	if er!= nil{
+	catupdated, er := catHander.catSrv.UpdateCatagory(cat)
+
+	if er != nil {
 		response.Message = "Internal server Error"
 		w.Write(helper.MarshalResponse(response))
 		log.Fatal(err)
 		return
 	}
-	response.Message ="Update successful"
+	response.Message = "Update successful"
 	response.Catagory = catupdated
 	w.Write(helper.MarshalResponse(response))
 }
 
-func(catHandler *CatagoryHandler) AddItem(w http.ResponseWriter,r *http.Request){
-	w.Header().Set("Content-Type","application/json")
+func (catHandler *CatagoryHandler) AddItem(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	session := catHandler.session.GetSession(r)
-	response:= &struct{
-		Message string
-		Item *entity.Item
+	response := &struct {
+		Message  string
 		Catagory *entity.Catagory
 	}{
 		Message: "UnAuthorized user",
 	}
-	if session == nil || session.Role != "Admin"{
+	input := &struct {
+		Item_id int
+	}{}
+
+	if &input.Item_id == nil {
+		response.Message = "Invalid input"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
-
-	item_id := r.FormValue("item_id")
-	cat_id := r.FormValue("catagory_id")
-	id_item,_:=strconv.Atoi(item_id)
-	id_cat,_:= strconv.Atoi(cat_id)
-	item,er := catHandler.itemSrv.Item(uint(id_item))
-	if item == nil || len(er) > 0{
+	if session == nil || session.Role != "Admin" {
+		w.Write(helper.MarshalResponse(response))
+		return
+	}
+	read, _ := ioutil.ReadAll(r.Body)
+	if er := json.Unmarshal(read, input); er != nil {
+		response.Message = "Internal server Error"
+		w.Write(helper.MarshalResponse(response))
+		return
+	}
+	item, er := catHandler.itemSrv.Item(uint(input.Item_id))
+	if item == nil || len(er) > 0 {
 		response.Message = "No such Item"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
-	cat,err:= catHandler.catSrv.Catagory(uint(id_cat))
-	if cat == nil || len(err) > 0{
+
+	Cat_id, _ := strconv.Atoi(mux.Vars(r)["id"])
+
+	cat, err := catHandler.catSrv.Catagory(uint(Cat_id))
+	if cat == nil || len(err) > 0 {
 		response.Message = "No such Catagory"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
 
-	for _,it := range cat.Items{
+	for _, it := range cat.Items {
 		if it.ID == item.ID {
 			response.Message = "Item already exist"
 			w.Write(helper.MarshalResponse(response))
-			return	
+			return
 		}
 	}
 	cat.Items = append(cat.Items, *item)
-	cat,err = catHandler.catSrv.UpdateCatagory(*cat)
+	cat, err = catHandler.catSrv.UpdateCatagory(*cat)
 	// item.Catagories = append(item.Catagories, cat_id)
 	// item,er = catHandler.itemSrv.UpdateItem(*item)
 
-	if cat == nil || len(err)>0{
+	if cat == nil || len(err) > 0 {
 		response.Message = "Internal server Error"
 		w.Write(helper.MarshalResponse(response))
+		return
 	}
 	response.Message = "Add Item successful"
-	response.Item = item
 	response.Catagory = cat
 
 	w.Write(helper.MarshalResponse(response))
 
 }
 
-func(catHandler *CatagoryHandler) GetMyItems(w http.ResponseWriter,r *http.Request){
+func (catHandler *CatagoryHandler) GetMyItems(w http.ResponseWriter, r *http.Request) {
 
-	w.Header().Set("Content-Type","application/json")
+	w.Header().Set("Content-Type", "application/json")
 	sess := catHandler.session.GetSession(r)
 
-	response := &struct{
+	response := &struct {
 		Message string
-		Items [] *entity.Item
+		Items   []*entity.Item
 	}{
 		Message: "UnAuthorized user",
 	}
 
-	if sess == nil{
+	if sess == nil {
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
-	id,_ := strconv.Atoi(mux.Vars(r)["catagory_id"])
+	id, _ := strconv.Atoi(mux.Vars(r)["catagory_id"])
 
-	cat,ers := catHandler.catSrv.Catagory(uint(id))
+	cat, ers := catHandler.catSrv.Catagory(uint(id))
 
-	if cat == nil || len(ers)>0{
+	if cat == nil || len(ers) > 0 {
 		response.Message = "no such catagory"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
 
-	for _,itm := range cat.Items{
-		item,ers := catHandler.itemSrv.Item(itm.ID)
-		if item == nil || len(ers)>0{
+	for _, itm := range cat.Items {
+		item, ers := catHandler.itemSrv.Item(itm.ID)
+		if item == nil || len(ers) > 0 {
 			response.Message = "no such catagory"
 			w.Write(helper.MarshalResponse(response))
 			return
 		}
-		response.Items =append(response.Items, item)
+		response.Items = append(response.Items, item)
 
 	}
 
-	response.Message ="successfully retrive Items"
+	response.Message = "successfully retrive Items"
 	w.Write(helper.MarshalResponse(response))
 
 }
 
-func(catHandler *CatagoryHandler) DeleteItem(w http.ResponseWriter,r *http.Request){
+func (catHandler *CatagoryHandler) DeleteItem(w http.ResponseWriter, r *http.Request) {
 
-	w.Header().Set("Content-Type","application/json")
+	w.Header().Set("Content-Type", "application/json")
 	session := catHandler.session.GetSession(r)
-	response:= &struct{
-		Message string
-		Item *entity.Item
+	response := &struct {
+		Message  string
 		Catagory *entity.Catagory
 	}{
 		Message: "UnAuthorized user",
 	}
-	if session == nil || session.Role != "Admin"{
+	input := &struct {
+		Item_id int `json:"item_id"`
+	}{}
+	if session == nil || session.Role != "Admin" {
+		w.Write(helper.MarshalResponse(response))
+		return
+	}
+	read, _ := ioutil.ReadAll(r.Body)
+
+	if er := json.Unmarshal(read, input); er != nil {
+		response.Message = "Internal server Error"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
 
-	item_id := r.FormValue("item_id")
-	cat_id := r.FormValue("catagory_id")
-	id_item,_:=strconv.Atoi(item_id)
-	id_cat,_:= strconv.Atoi(cat_id)
-	item,er := catHandler.itemSrv.Item(uint(id_item))
-	if item == nil || len(er) > 0{
+	item, er := catHandler.itemSrv.Item(uint(input.Item_id))
+	if item == nil || len(er) > 0 {
 		response.Message = "No such Item"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
-	cat,err:= catHandler.catSrv.Catagory(uint(id_cat))
-	if cat == nil || len(err) > 0{
+	id_cat, _ := strconv.Atoi(mux.Vars(r)["id"])
+	cat, err := catHandler.catSrv.Catagory(uint(id_cat))
+	if cat == nil || len(err) > 0 {
 		response.Message = "No such Catagory"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
-
-
-	for _,it := range cat.Items{
-		if it.ID == item.ID {
-			response.Message = "Item exist"
-			w.Write(helper.MarshalResponse(response))
-				
-		}else{
-			cat.Items = append(cat.Items, it)
+	check := false
+	var itms []entity.Item
+	for _, it := range cat.Items {
+		if it.ID != item.ID {
+			itms = append(itms, it)
+			fmt.Println(it.ID)
+		} else {
+			check = true
 		}
 	}
-	if response.Message != "Item exist" {
-		response.Message = "no such Item exist in this catagory"
+	if check {
+		copy(cat.Items, itms)
+		cat, err = catHandler.catSrv.UpdateCatagory(*cat)
+		fmt.Println(itms)
+		if cat == nil || len(err) > 0 {
+			response.Message = "Internal server Error"
+			w.Write(helper.MarshalResponse(response))
+			return
+		}
+		response.Message = "Delete Item from catagory successfully"
+		response.Catagory = cat
 		w.Write(helper.MarshalResponse(response))
 		return
-		
 	}
-	// for _,catId:= range item.Catagories{
-	// 	if catId != string(cat.ID){
-	// 		item.Catagories =append(item.Catagories, catId)
-	// 	}
-	// }
-	
-	cat,err = catHandler.catSrv.UpdateCatagory(*cat)
-	item,er = catHandler.itemSrv.UpdateItem(*item)
 
-	if item==nil || cat == nil || len(er)>0 || len(err)>0{
-		response.Message = "Internal server Error"
-		w.Write(helper.MarshalResponse(response))
-	}
-	response.Message = "Delete Item from catagory successfully"
-	response.Item = item
+	response.Message = "Given item is not in the catagory"
 	response.Catagory = cat
-
 	w.Write(helper.MarshalResponse(response))
 
 }
 
-func(catHandler *CatagoryHandler) DeleteCatagory(w http.ResponseWriter,r *http.Request){
+func (catHandler *CatagoryHandler) DeleteCatagory(w http.ResponseWriter, r *http.Request) {
 
-	w.Header().Set("Content-Type","application/json")
+	w.Header().Set("Content-Type", "application/json")
 	session := catHandler.session.GetSession(r)
-	response := &struct{
-		Message string
+	response := &struct {
+		Message  string
 		Catagory *entity.Catagory
 	}{
 		Message: "Unauthorized user",
 	}
-	if session == nil || session.Role != "Admin"{
+	if session == nil || session.Role != "Admin" {
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
 	id := mux.Vars(r)["id"]
-	ids,_ := strconv.Atoi(id)
+	ids, _ := strconv.Atoi(id)
 
-	cata,er := catHandler.catSrv.Catagory(uint(ids))
-	if len(er)>0 || cata ==nil{
+	cata, er := catHandler.catSrv.Catagory(uint(ids))
+	if len(er) > 0 || cata == nil {
 		response.Message = "no such catagory exist"
 		w.Write(helper.MarshalResponse(response))
 		return
@@ -456,7 +481,7 @@ func(catHandler *CatagoryHandler) DeleteCatagory(w http.ResponseWriter,r *http.R
 
 	// 	// for _,c_id:= range item.Catagories{
 	// 	// 	if c_id != id {
-	// 	// 		item.Catagories = append(item.Catagories, c_id)				
+	// 	// 		item.Catagories = append(item.Catagories, c_id)
 	// 	// 	}
 	// 	// }
 	// 	// item,er = catHandler.itemSrv.UpdateItem(*item)
@@ -468,14 +493,14 @@ func(catHandler *CatagoryHandler) DeleteCatagory(w http.ResponseWriter,r *http.R
 	// 	// }
 
 	// }
-	cata,er = catHandler.catSrv.DeleteCatagory(uint(ids)) 
-	if len(er)>0 || cata ==nil{
+	cata, er = catHandler.catSrv.DeleteCatagory(uint(ids))
+	if len(er) > 0 || cata == nil {
 		response.Message = "Internal Server Error"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
 	response.Message = "Delete catagory successful"
-	response.Catagory = cata 
+	response.Catagory = cata
 
 	w.Write(helper.MarshalResponse(response))
 }

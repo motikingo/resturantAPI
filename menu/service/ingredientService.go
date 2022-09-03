@@ -5,55 +5,52 @@ import (
 	"github.com/motikingo/resturant-api/menu"
 )
 
-type IngredientGormService struct{
+type IngredientGormService struct {
 	repo menu.IngredientRepo
 }
 
-func NewIngredientGormService(repo menu.IngredientRepo)menu.IngredientService{
-	return &IngredientGormService{repo:repo}
+func NewIngredientGormService(repo menu.IngredientRepo) menu.IngredientService {
+	return &IngredientGormService{repo: repo}
 }
 
+func (ingrdServ *IngredientGormService) Ingredients() ([]entity.Ingredient, []error) {
 
-
-func(ingrdServ *IngredientGormService) Ingredients()([]entity.Ingredient,[]error){
-
-	ingredients,err:= ingrdServ.repo.Ingredients()
-	if len(err)>0{
-		return nil,err
+	ingredients, err := ingrdServ.repo.Ingredients()
+	if len(err) > 0 {
+		return nil, err
 	}
-	return ingredients,nil
+	return ingredients, nil
 }
 
-func(ingrdServ *IngredientGormService) Ingredient(id uint)(*entity.Ingredient,[]error){
+func (ingrdServ *IngredientGormService) Ingredient(id uint) (*entity.Ingredient, []error) {
 
-	ingredient,err:= ingrdServ.repo.Ingredient(id)
-	if len(err)>0{
-		return nil,err
+	ingredient, err := ingrdServ.repo.Ingredient(id)
+	if len(err) > 0 {
+		return nil, err
 	}
-	return ingredient,nil
+	return ingredient, nil
 }
-func(ingrdServ *IngredientGormService)UpdateIngredient(ingr entity.Ingredient)(*entity.Ingredient,[]error){
+func (ingrdServ *IngredientGormService) UpdateIngredient(ingr entity.Ingredient) (*entity.Ingredient, []error) {
 
-	ingredient,err := ingrdServ.repo.UpdateIngredient(ingr)
-	if len(err)>0{
-		return nil,err
+	ingredient, err := ingrdServ.repo.UpdateIngredient(ingr)
+	if len(err) > 0 {
+		return nil, err
 	}
-	return ingredient,nil
+	return ingredient, nil
 }
-func(ingrdServ *IngredientGormService)DeleteIngredient(id uint)(*entity.Ingredient,[]error){
-	
-	ingredient,err := ingrdServ.repo.DeleteIngredient(id)
-	if len(err)>0{
-		return nil,err
-	}
-	return ingredient,nil
-}
-func(ingrdServ *IngredientGormService)CreateIngredient(ingrd entity.Ingredient)(*entity.Ingredient,[]error){
-	
-	ingredient,err := ingrdServ.repo.CreateIngredient(ingrd)
-	if len(err)>0{
-		return nil,err
-	}
-	return ingredient,nil
-}
+func (ingrdServ *IngredientGormService) DeleteIngredient(id uint) (*entity.Ingredient, []error) {
 
+	ingredient, err := ingrdServ.repo.DeleteIngredient(id)
+	if len(err) > 0 {
+		return nil, err
+	}
+	return ingredient, nil
+}
+func (ingrdServ *IngredientGormService) CreateIngredient(ingrd entity.Ingredient) (*entity.Ingredient, []error) {
+
+	ingredient, err := ingrdServ.repo.CreateIngredient(ingrd)
+	if len(err) > 0 {
+		return nil, err
+	}
+	return ingredient, nil
+}

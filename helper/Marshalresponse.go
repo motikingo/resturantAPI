@@ -1,13 +1,14 @@
 package helper
 
-import(
+import (
 	"encoding/json"
 )
+
 func MarshalResponse(res interface{}) []byte {
 
-	resp,er := json.Marshal(res)
+	resp, er := json.Marshal(res)
 
-	if er != nil{
+	if er != nil {
 		return []byte(er.Error())
 	}
 	return resp

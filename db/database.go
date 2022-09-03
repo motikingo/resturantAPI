@@ -10,10 +10,10 @@ import (
 	"github.com/motikingo/resturant-api/entity"
 )
 
-func Connect() *gorm.DB{
+func Connect() *gorm.DB {
 
 	err := godotenv.Load("../.env")
-	if err != nil{
+	if err != nil {
 		log.Fatal(err)
 		return nil
 	}
@@ -24,22 +24,21 @@ func Connect() *gorm.DB{
 	//dbport := os.Getenv("dbport")
 	dbname := os.Getenv("dbname")
 	passord := os.Getenv("password")
-	dbURL := fmt.Sprintf("host=%s user=%s dbname=%s  sslmode=disable password=%s" ,host,user,dbname,passord)
+	dbURL := fmt.Sprintf("host=%s user=%s dbname=%s  sslmode=disable password=%s", host, user, dbname, passord)
 
 	//db,err = gorm.Open("postgres","user = postgres password = moti dbname = resturant sslmode=disable")
 
+	db, err := gorm.Open(dialect, dbURL)
 
-	db,err := gorm.Open(dialect,dbURL)
-
-	if err != nil||  db == nil{
+	if err != nil || db == nil {
 		fmt.Println("opening db error")
 		return nil
 	}
-	
+
 	return db
 }
 
-func Migrate(db *gorm.DB){
+func Migrate(db *gorm.DB) {
 	db.Debug().AutoMigrate(&entity.Catagory{})
 	db.Debug().AutoMigrate(&entity.Comment{})
 	db.Debug().AutoMigrate(&entity.User{})
@@ -47,5 +46,3 @@ func Migrate(db *gorm.DB){
 	db.Debug().AutoMigrate(&entity.Item{})
 	db.Debug().AutoMigrate(&entity.Order{})
 }
-
-

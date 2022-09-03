@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	//"fmt"
+	"fmt"
 	"log"
 
 	//"fmt"
@@ -19,19 +19,21 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/motikingo/resturant-api/entity"
 	"github.com/motikingo/resturant-api/helper"
-	Order "github.com/motikingo/resturant-api/order"
 	"github.com/motikingo/resturant-api/menu"
+	"github.com/motikingo/resturant-api/user"
 
+	Order "github.com/motikingo/resturant-api/order"
 )
 
-type OrderHandler struct{
-	odrSrv Order.OrderService
+type OrderHandler struct {
+	odrSrv  Order.OrderService
 	itemsrv menu.ItemService
+	userSrv user.UserService
 	session *SessionHandler
 }
 
-func NewOrderHandler(odrSrv Order.OrderService,session *SessionHandler)OrderHandler{
-	return OrderHandler{odrSrv: odrSrv,session:session}
+func NewOrderHandler(odrSrv Order.OrderService, itemsrv menu.ItemService, userSrv user.UserService, session *SessionHandler) OrderHandler {
+	return OrderHandler{odrSrv: odrSrv, itemsrv: itemsrv, userSrv: userSrv, session: session}
 }
 
 // func(odrHan *OrderHandler) GetOrders(w http.ResponseWriter, r *http.Request){
@@ -48,187 +50,227 @@ func NewOrderHandler(odrSrv Order.OrderService,session *SessionHandler)OrderHand
 // 	w.Write(ordsMar)
 // }
 
-func(odrHan *OrderHandler) GetOrder(w http.ResponseWriter, r *http.Request){
-	w.Header().Set("Content-Type","application/json")
+func (odrHan *OrderHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	sess := odrHan.session.GetSession(r)
 	if sess == nil {
 		w.Write(helper.MarshalResponse("UnAuthorized user"))
 		return
 	}
-	id:=mux.Vars(r)["id"]
-	ids,e:=strconv.Atoi(id)
-	
-	if e!= nil{
+	id := mux.Vars(r)["id"]
+	ids, e := strconv.Atoi(id)
+
+	if e != nil {
 		w.Write(helper.MarshalResponse("Internal Server Error"))
 		return
 	}
-		
-	ord,err:= odrHan.odrSrv.Order(uint(ids))
-	if err!=nil || ord == nil{
+
+	ord, err := odrHan.odrSrv.Order(uint(ids))
+	if err != nil || ord == nil {
 		w.Write(helper.MarshalResponse("No such Order"))
 		log.Fatal(err)
 	}
-	
+
 	w.Write(helper.MarshalResponse(ord))
 }
 
-func(odrHan *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request){
-	w.Header().Set("Content-Type","application/json")
+func (odrHan *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	sess := odrHan.session.GetSession(r)
-	response := &struct{
+	response := &struct {
 		Status string
-		Order * entity.Order
+		Order  *entity.Order
 	}{
 		Status: "order create faild",
 	}
-	input := &struct{
-		ItemId string
+	input := &struct {
+		ItemId int
 		Number int
 	}{}
-	if sess == nil{
+	if sess == nil {
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
 
-	read,er:=ioutil.ReadAll(r.Body)
-	if er!=nil{
+	read, er := ioutil.ReadAll(r.Body)
+	if er != nil {
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
-	e:=json.Unmarshal(read,&input)
-	if e!=nil|| input.ItemId == "" || input.Number < 1 {
+
+	if e := json.Unmarshal(read, &input); e != nil || input.ItemId == 0 || input.Number < 1 {
+		fmt.Println("here")
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
-	itemId,_ := strconv.Atoi(input.ItemId)
-	userId,_ := strconv.Atoi(sess.UserID)
-	item,ers := odrHan.itemsrv.Item(uint(itemId))
-	if len(ers)>0{
+	userId, _ := strconv.Atoi(sess.UserID)
+	item, ers := odrHan.itemsrv.Item(uint(input.ItemId))
+	if len(ers) > 0 {
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
-	if item.Number < input.Number{
+	if item.Number < input.Number {
 		response.Status = "Sorry we don't have enought item come back latter"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
 	bill := item.Price * float64(input.Number)
 	order := entity.Order{
-		PlaceAt: time.Now(),
-		ItemID: uint(itemId),
-		UserID: uint(userId),
-		Number : input.Number,
-		Orderbill:bill,
-
-	}
-	
-	ord,err:= odrHan.odrSrv.CreateOrder(order)
-	if err!=nil{
-		w.Write(helper.MarshalResponse(response))
-		return
+		PlaceAt:   time.Now(),
+		ItemID:    uint(input.ItemId),
+		UserID:    uint(userId),
+		Number:    input.Number,
+		Orderbill: bill,
 	}
 
-	item.Number = item.Number - ord.Number
+	user, _ := odrHan.userSrv.GetUserByID(uint(userId))
+	user.Orders = append(user.Orders, order)
+	_, ers = odrHan.userSrv.UpdateUser(*user)
 
-	item,ers = odrHan.itemsrv.UpdateItem(*item)
-	if er!=nil{
+	if len(ers) > 0 {
 		response.Status = "Internal Server Error"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
+
+	ord, err := odrHan.odrSrv.CreateOrder(order)
+	if len(err) > 0 {
+		user.Orders = user.Orders[:len(user.Orders)-1]
+		_, _ = odrHan.userSrv.UpdateUser(*user)
+		response.Status = "Internal Server Error"
+		w.Write(helper.MarshalResponse(response))
+		return
+	}
+
+	item.Number -= input.Number
+	_, ers = odrHan.itemsrv.UpdateItem(*item)
+	if len(ers) > 0 {
+		user.Orders = user.Orders[:len(user.Orders)-1]
+		_, _ = odrHan.userSrv.UpdateUser(*user)
+		_, _ = odrHan.odrSrv.DeleteOrder(order.ID)
+		response.Status = "Internal Server Error"
+		w.Write(helper.MarshalResponse(response))
+		return
+	}
+
 	response.Status = "successfully ordered"
-	response.Order = ord 
-
+	response.Order = ord
 	w.Write(helper.MarshalResponse(response))
+
 }
 
-func(odrHan *OrderHandler) UpdateOrder(w http.ResponseWriter, r *http.Request){
-	w.Header().Set("Content-Type","application/json")
+func (odrHan *OrderHandler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	sess := odrHan.session.GetSession(r)
-	
-	response := &struct{
+	response := &struct {
 		Status string
-		Order * entity.Order
+		Order  *entity.Order
 	}{
-		Status: "order update faild",
+		Status: "order create faild",
 	}
-	input := &struct{
-		Count int
+	input := &struct {
+		Number int
 	}{}
-
-	if sess==nil {
-		w.Write(helper.MarshalResponse(response))
-		return
-	}
-	ids:=mux.Vars(r)["id"]
-	id,_:= strconv.Atoi(ids)
-	odr,ers := odrHan.odrSrv.Order(uint(id))
-
-	if odr==nil || len(ers)>0{
-		w.Write(helper.MarshalResponse(response))
-		return
-	}
-	read,er:=ioutil.ReadAll(r.Body)
-
-	if er!=nil{
-		w.Write(helper.MarshalResponse(response))
-		return
-	}
-	er = json.Unmarshal(read,&input) 
-
-	if er!=nil || input.Count < 1{
+	if sess == nil {
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
 
-	if odr.Number == input.Count{
-		response.Status = "Nothing change"
+	read, er := ioutil.ReadAll(r.Body)
+	if er != nil {
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
-	odr = &entity.Order{
-		PlaceAt: time.Now(),
-		Number: input.Count,
-	}
-	odr.ID = uint(id)
-	ordernew,errs:=odrHan.odrSrv.UpdateOrder(*odr)
 
-	if len(errs)>0{
+	if e := json.Unmarshal(read, &input); e != nil || input.Number < 1 {
+		fmt.Println("here")
+		w.Write(helper.MarshalResponse(response))
+		return
+	}
+	ordId, _ := strconv.Atoi(mux.Vars(r)["id"])
+	ordr, _ := odrHan.odrSrv.Order(uint(ordId))
+
+	userId, _ := strconv.Atoi(sess.UserID)
+	item, ers := odrHan.itemsrv.Item(uint((*ordr).ItemID))
+	if len(ers) > 0 {
+		w.Write(helper.MarshalResponse(response))
+		return
+	}
+	if item.Number < input.Number {
+		response.Status = "Sorry we don't have enought item come back latter"
+		w.Write(helper.MarshalResponse(response))
+		return
+	}
+	bill := item.Price * float64(input.Number)
+	order := entity.Order{
+		PlaceAt:   time.Now(),
+		ItemID:    uint(ordr.ItemID),
+		UserID:    uint(userId),
+		Number:    input.Number,
+		Orderbill: bill,
+	}
+	order.ID = ordr.ID
+	ord, err := odrHan.odrSrv.UpdateOrder(order)
+	if len(err) > 0 {
 		response.Status = "Internal Server Error"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
-	response.Status = "Successfully updated"
-	response.Order = ordernew
-	w.Write(helper.MarshalResponse(response))
-}
 
-func(odrHan *OrderHandler) DeleteOrder(w http.ResponseWriter, r *http.Request){
-	w.Header().Set("Content-Type","application/json")
+	item.Number = item.Number + ordr.Number - input.Number
+	_, ers = odrHan.itemsrv.UpdateItem(*item)
+	if len(ers) > 0 {
+		_, _ = odrHan.odrSrv.UpdateOrder(order)
+		response.Status = "Internal Server Error"
+		w.Write(helper.MarshalResponse(response))
+		return
+	}
+
+	response.Status = " ordered successfully updated"
+	response.Order = ord
+	w.Write(helper.MarshalResponse(response))
+
+}
+func (odrHan *OrderHandler) DeleteOrder(w http.ResponseWriter, r *http.Request) {
+
+	w.Header().Set("Content-Type", "application/json")
 	sess := odrHan.session.GetSession(r)
-	response := &struct{
+	response := &struct {
 		Status string
-		OrderId uint
+		Order  *entity.Order
 	}{
-		Status: "Delete order faild",
+		Status: "order Delete faild",
 	}
-	if sess == nil{
+
+	if sess == nil {
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
-	id:=mux.Vars(r)["id"]
-	ids,_:=strconv.Atoi(id)
-	ord,err:= odrHan.odrSrv.Order(uint(ids))
-	if ord==nil || len(err)>0{
-		response.Status = "No such order"
+
+	ordId, _ := strconv.Atoi(mux.Vars(r)["id"])
+	ordr, ers := odrHan.odrSrv.DeleteOrder(uint(ordId))
+
+	if len(ers) > 0 {
+		response.Status = "Internal Server Error"
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
-	ord,err = odrHan.odrSrv.DeleteOrder(uint(ids))
-	if err!=nil{
+	item, ers := odrHan.itemsrv.Item(uint((*ordr).ItemID))
+	if len(ers) > 0 {
 		w.Write(helper.MarshalResponse(response))
 		return
 	}
-	
-	w.Write(helper.MarshalResponse(ord))
+
+	item.Number = item.Number + ordr.Number
+	_, ers = odrHan.itemsrv.UpdateItem(*item)
+	if len(ers) > 0 {
+		_, _ = odrHan.odrSrv.CreateOrder(*ordr)
+		response.Status = "Internal Server Error"
+		w.Write(helper.MarshalResponse(response))
+		return
+	}
+
+	response.Status = " ordered successfully deleted"
+	response.Order = ordr
+	w.Write(helper.MarshalResponse(response))
 }

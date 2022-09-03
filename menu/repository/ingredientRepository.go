@@ -6,68 +6,65 @@ import (
 	"github.com/motikingo/resturant-api/menu"
 )
 
-type IngredientGormRepository struct{
+type IngredientGormRepository struct {
 	db *gorm.DB
 }
 
-func NewIngredientGormRepository(db *gorm.DB)menu.IngredientRepo{
-	return &IngredientGormRepository{db:db}
+func NewIngredientGormRepository(db *gorm.DB) menu.IngredientRepo {
+	return &IngredientGormRepository{db: db}
 }
 
-
-
-func(ingrd *IngredientGormRepository) Ingredients()([]entity.Ingredient,[]error){
+func (ingrd *IngredientGormRepository) Ingredients() ([]entity.Ingredient, []error) {
 
 	ingredients := []entity.Ingredient{}
-	err:= ingrd.db.Model(entity.Ingredient{}).Preload("Items").Find(&ingredients).GetErrors()
-	if len(err)>0{
-		return nil,err
+	err := ingrd.db.Model(entity.Ingredient{}).Preload("Items").Find(&ingredients).GetErrors()
+	if len(err) > 0 {
+		return nil, err
 	}
-	return ingredients,nil
+	return ingredients, nil
 }
 
-func(ingrd *IngredientGormRepository) Ingredient(id uint)(*entity.Ingredient,[]error){
+func (ingrd *IngredientGormRepository) Ingredient(id uint) (*entity.Ingredient, []error) {
 
 	var ingredient entity.Ingredient
-	err:= ingrd.db.Preload("Items").First(&ingredient,id).GetErrors()
-	if len(err)>0{
-		return nil,err
+	err := ingrd.db.Preload("Items").First(&ingredient, id).GetErrors()
+	if len(err) > 0 {
+		return nil, err
 	}
-	return &ingredient,nil
+	return &ingredient, nil
 }
-func(ingrd *IngredientGormRepository)UpdateIngredient(Ingr entity.Ingredient)(*entity.Ingredient,[]error){
+func (ingrd *IngredientGormRepository) UpdateIngredient(Ingr entity.Ingredient) (*entity.Ingredient, []error) {
 
-	ingredients,err := ingrd.Ingredient(Ingr.ID)
-	if len(err)>0{
-		return nil,err
+	ingredients, err := ingrd.Ingredient(Ingr.ID)
+	if len(err) > 0 {
+		return nil, err
 	}
-	err= ingrd.db.Find(&ingredients).GetErrors()
-	if len(err)>0{
-		return nil,err
+	err = ingrd.db.Find(&ingredients).GetErrors()
+	if len(err) > 0 {
+		return nil, err
 	}
-	return ingredients,nil
+	return ingredients, nil
 }
-func(ingrd *IngredientGormRepository)DeleteIngredient(id uint)(*entity.Ingredient,[]error){
+func (ingrd *IngredientGormRepository) DeleteIngredient(id uint) (*entity.Ingredient, []error) {
 
-	ingredient,err := ingrd.Ingredient(id)
-	if len(err)>0{
-		return nil,err
+	ingredient, err := ingrd.Ingredient(id)
+	if len(err) > 0 {
+		return nil, err
 	}
-	
-	err = ingrd.db.Delete(&ingredient,id).GetErrors()
-	if len(err)>0{
-		return nil,err
+
+	err = ingrd.db.Delete(&ingredient, id).GetErrors()
+	if len(err) > 0 {
+		return nil, err
 	}
-	return ingredient,nil
+	return ingredient, nil
 }
-func(ingrdRepo *IngredientGormRepository)CreateIngredient(igrd entity.Ingredient)(*entity.Ingredient,[]error){
+func (ingrdRepo *IngredientGormRepository) CreateIngredient(igrd entity.Ingredient) (*entity.Ingredient, []error) {
 
-	ingredient :=igrd
+	ingredient := igrd
 
 	err := ingrdRepo.db.Create(&ingredient).GetErrors()
-	if len(err)>0{
-		return nil,err
+	if len(err) > 0 {
+		return nil, err
 	}
-	return &ingredient,nil
+	return &ingredient, nil
 }
-
